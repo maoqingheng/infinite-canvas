@@ -6,6 +6,7 @@ export default defineAppConfig({
     'pages/prompts/index',
     'pages/assets/index',
     'pages/asset-library/index',
+    'pages/config/index',
   ],
   window: {
     backgroundTextStyle: 'light',

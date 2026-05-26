@@ -182,6 +182,9 @@ export default function PromptsPage() {
           onSaveAsset={savePromptAsset}
         />
       )}
+      <View className="back-home" onClick={() => Taro.navigateTo({ url: '/pages/index/index' })}>
+        <Text>←</Text>
+      </View>
     </View>
   )
 }

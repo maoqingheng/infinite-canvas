@@ -689,6 +689,9 @@ export default function ImagePage() {
 
       {/* AI Config Modal */}
       <ConfigModal />
+      <View className="back-home" onClick={() => Taro.navigateTo({ url: '/pages/index/index' })}>
+        <Text>←</Text>
+      </View>
     </View>
   )
 }
