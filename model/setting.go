@@ -54,11 +54,16 @@ type PublicLinuxDoAuthSetting struct {
 	Enabled bool `json:"enabled"`
 }
 
+type FreeAccessSetting struct {
+	Enabled *bool `json:"enabled"`
+}
+
 // PrivateSetting 私有配置。
 type PrivateSetting struct {
 	Channels   []ModelChannel     `json:"channels"`
 	PromptSync PromptSyncSetting  `json:"promptSync"`
 	Auth       PrivateAuthSetting `json:"auth"`
+	FreeAccess FreeAccessSetting  `json:"freeAccess"`
 }
 
 // PromptSyncSetting 提示词定时同步配置。

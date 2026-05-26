@@ -205,6 +205,9 @@ export type AdminPrivateSettings = {
             clientSecret: string;
         };
     };
+    freeAccess: {
+        enabled: boolean;
+    };
 };
 
 export type AdminSettings = {

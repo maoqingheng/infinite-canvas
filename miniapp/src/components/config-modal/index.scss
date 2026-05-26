@@ -179,6 +179,18 @@
   }
 }
 
+// Channel hint
+.config-channel-hint {
+  padding: 16px 20px;
+  font-size: 24px;
+  color: #a8a29e;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
 // Remote info
 .config-remote-info {
   padding: 20px;

@@ -38,7 +38,7 @@ const emptySettings: AdminSettings = {
         },
         auth: { allowRegister: true, linuxDo: { enabled: false } },
     },
-    private: { channels: [], promptSync: { enabled: true, cron: "*/5 * * * *" }, auth: { linuxDo: { clientId: "", clientSecret: "" } } },
+    private: { channels: [], promptSync: { enabled: true, cron: "*/5 * * * *" }, auth: { linuxDo: { clientId: "", clientSecret: "" } },freeAccess: { enabled: false }, },
 };
 const emptyChannel: AdminModelChannel = { protocol: "openai", name: "", baseUrl: "", apiKey: "", models: [], weight: 1, enabled: true, remark: "" };
 
@@ -457,6 +457,15 @@ export default function AdminSettingsPage() {
                                         </Row>
                                     </Flex>
                                 </Card>
+                                <Card size="small" title="开放免费使用">
+                                    <Row gutter={16} align="middle">
+                                        <Col xs={24} md={8}>
+                                            <Form.Item name={["private", "freeAccess", "enabled"]} label="开启免费使用" valuePropName="checked" extra="开启后，用户无需登录即可使用生图功能">
+                                                <Switch />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </Card>
                                 <Card size="small" title="提示词定时同步">
                                     <Row gutter={16} align="middle">
                                         <Col xs={24} md={8}>
@@ -718,6 +727,9 @@ function normalizePrivateSetting(setting: Partial<AdminSettings["private"]> = {}
                 clientId: setting.auth?.linuxDo?.clientId || "",
                 clientSecret: setting.auth?.linuxDo?.clientSecret || "",
             },
+        },
+        freeAccess: {
+            enabled: setting.freeAccess?.enabled === true,
         },
     };
 }

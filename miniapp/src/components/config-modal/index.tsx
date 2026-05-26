@@ -106,6 +106,13 @@ export function ConfigModal() {
 
         {/* Body */}
         <View className="config-modal-body">
+          {/* Channel Mode Hint */}
+          {!allowCustomChannel && (
+            <View className="config-channel-hint">
+              <Text>管理员已内置渠道，无需配置</Text>
+            </View>
+          )}
+
           {/* Channel Mode Switch */}
           {allowCustomChannel && (
             <View className="config-field">
