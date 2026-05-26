@@ -1,0 +1,223 @@
+.config-modal-mask {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.config-modal {
+  width: 100%;
+  max-height: 90vh;
+  background-color: #1c1917;
+  border-radius: 32px 32px 0 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.config-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 32px 32px 20px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.config-modal-title {
+  display: block;
+  font-size: 36px;
+  font-weight: 600;
+  color: #fafaf9;
+}
+
+.config-modal-subtitle {
+  display: block;
+  margin-top: 6px;
+  font-size: 24px;
+  color: #a8a29e;
+}
+
+.config-modal-close {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #a8a29e;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.config-modal-body {
+  flex: 1;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+
+.config-modal-footer {
+  padding: 24px 32px;
+  border-top: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+// Field
+.config-field {
+  margin-bottom: 24px;
+}
+
+.config-field-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.config-field-half {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.config-label {
+  display: block;
+  font-size: 26px;
+  font-weight: 500;
+  color: #a8a29e;
+  margin-bottom: 12px;
+}
+
+.config-input {
+  width: 100%;
+  height: 72px;
+  padding: 0 20px;
+  font-size: 26px;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #fafaf9;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: #78716c;
+  }
+}
+
+.config-textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 20px;
+  font-size: 26px;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #fafaf9;
+  box-sizing: border-box;
+}
+
+// Segmented
+.config-segmented {
+  display: flex;
+  border-radius: 14px;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.segmented-item {
+  flex: 1;
+  text-align: center;
+  padding: 18px 0;
+  font-size: 26px;
+  color: #78716c;
+
+  &-active {
+    background-color: #fafaf9;
+    color: #0c0a09;
+  }
+}
+
+// Models bar
+.config-models-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+
+.config-models-info {
+  min-width: 0;
+}
+
+.config-models-title {
+  display: block;
+  font-size: 26px;
+  font-weight: 500;
+  color: #fafaf9;
+}
+
+.config-models-count {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  color: #a8a29e;
+}
+
+.config-models-btn {
+  padding: 14px 24px;
+  font-size: 24px;
+  color: #d6d3d1;
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  flex-shrink: 0;
+
+  &-loading {
+    opacity: 0.5;
+  }
+}
+
+// Remote info
+.config-remote-info {
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  margin-bottom: 24px;
+}
+
+.config-remote-info-title {
+  display: block;
+  font-size: 26px;
+  font-weight: 500;
+  color: #fafaf9;
+  margin-bottom: 6px;
+}
+
+.config-remote-info-desc {
+  font-size: 24px;
+  color: #a8a29e;
+}
+
+// Model pickers grid
+.config-model-pickers {
+  margin-bottom: 24px;
+
+  .config-field {
+    margin-bottom: 20px;
+  }
+}
+
+// Finish button
+.config-finish-btn {
+  width: 100%;
+  text-align: center;
+  padding: 26px 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: #0c0a09;
+  background-color: #fafaf9;
+  border-radius: 16px;
+}
