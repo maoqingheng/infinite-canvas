@@ -10,6 +10,7 @@ const navigationTools = [
   { slug: 'prompts', label: '提示词库' },
   { slug: 'assets', label: '我的素材' },
   { slug: 'asset-library', label: '素材库' },
+  { slug: 'config', label: '渠道配置' },
 ]
 
 function navigateTo(slug: string) {
@@ -156,6 +157,8 @@ function toolIcon(slug: string): string {
       return '📁'
     case 'asset-library':
       return '📚'
+    case 'config':
+      return '⚙️'
     default:
       return '🔧'
   }

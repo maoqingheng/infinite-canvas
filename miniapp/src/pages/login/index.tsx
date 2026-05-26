@@ -166,6 +166,9 @@ export default function LoginPage() {
           )}
         </View>
       </View>
+      <View className="back-home" onClick={() => Taro.navigateTo({ url: '/pages/index/index' })}>
+        <Text>←</Text>
+      </View>
     </View>
   )
 }
