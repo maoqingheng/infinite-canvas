@@ -1,0 +1,251 @@
+// Dot pattern background — matching web's dark mode radial gradient
+.index-page {
+  min-height: 100vh;
+  background-color: #0c0a09;
+  background-image: radial-gradient(rgba(245, 245, 244, 0.18) 1px, transparent 1px);
+  background-size: 16px 16px;
+  padding: 80px 32px 0;
+}
+
+// Hero
+.hero {
+  text-align: center;
+  padding-bottom: 80px;
+}
+
+.hero-title {
+  display: block;
+  font-size: 64px;
+  font-weight: 700;
+  color: #fafaf9;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.hero-desc {
+  display: block;
+  margin-top: 24px;
+  font-size: 30px;
+  color: #a8a29e;
+  line-height: 1.7;
+  padding: 0 16px;
+}
+
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 48px;
+}
+
+.hero-btn {
+  padding: 22px 48px;
+  font-size: 30px;
+  font-weight: 600;
+  border-radius: 16px;
+  color: #a8a29e;
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+
+  &-primary {
+    background-color: #fafaf9;
+    color: #0c0a09;
+    border-color: #fafaf9;
+  }
+}
+
+// Tool Cards
+.tools-section {
+  padding-bottom: 80px;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+}
+
+.tool-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.08);
+  margin-bottom: 16px;
+}
+
+.tool-icon-text {
+  font-size: 36px;
+}
+
+.tool-label {
+  font-size: 26px;
+  font-weight: 500;
+  color: #d6d3d1;
+}
+
+// Showcase Section
+.showcase-section {
+  border-top: 2px solid rgba(255, 255, 255, 0.08);
+  padding-top: 64px;
+  padding-bottom: 80px;
+}
+
+.showcase-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 40px;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.showcase-title {
+  display: block;
+  font-size: 40px;
+  font-weight: 600;
+  color: #fafaf9;
+}
+
+.showcase-desc {
+  display: block;
+  margin-top: 12px;
+  font-size: 26px;
+  color: #78716c;
+  line-height: 1.7;
+}
+
+.showcase-link {
+  font-size: 26px;
+  color: #a8a29e;
+  align-self: flex-start;
+}
+
+// Showcase Grid — masonry-like layout
+.showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  max-width: 960px;
+  margin: 0 auto;
+  grid-auto-rows: 200px;
+}
+
+.showcase-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+  background-color: rgba(255, 255, 255, 0.03);
+
+  &-large {
+    grid-column: 1 / -1;
+    grid-row: span 2;
+  }
+
+  &-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.showcase-card-img {
+  width: 100%;
+  height: 100%;
+}
+
+.showcase-card-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.showcase-card-text-preview {
+  font-size: 22px;
+  color: #78716c;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.showcase-card-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 50%, transparent 100%);
+}
+
+.showcase-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.showcase-tag {
+  padding: 4px 12px;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.showcase-card-title {
+  display: block;
+  font-size: 26px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.showcase-card-prompt {
+  font-size: 22px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+// Preview Popup
+.preview-mask {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 80vh;
+}
