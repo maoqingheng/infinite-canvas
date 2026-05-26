@@ -2,9 +2,11 @@ package router
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/basketikun/infinite-canvas/handler"
 	"github.com/basketikun/infinite-canvas/middleware"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +14,18 @@ func New() *gin.Engine {
 	router := gin.Default()
 	router.RedirectTrailingSlash = false
 	_ = router.SetTrustedProxies(nil)
+
+	// 配置 CORS 中间件
+	config := cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	router.Use(cors.New(config))
+
 	api := router.Group("/api")
 	api.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "ok")
