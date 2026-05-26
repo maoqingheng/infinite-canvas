@@ -77,6 +77,13 @@ export default function ConfigPage() {
   return (
     <View className="config-page">
       <View className="config-section">
+        {/* Channel Mode Hint */}
+        {!allowCustomChannel && (
+          <View className="config-channel-hint">
+            <Text>管理员已内置渠道，无需配置</Text>
+          </View>
+        )}
+
         {/* Channel Mode Switch */}
         {allowCustomChannel && (
           <View className="config-field">
