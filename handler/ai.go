@@ -65,18 +65,23 @@ func proxyAIRequest(w http.ResponseWriter, r *http.Request, path string) {
 		Fail(w, "AI 接口请求失败")
 		return
 	}
-	user, ok := service.UserFromContext(r.Context())
-	if !ok {
-		Fail(w, "未登录或权限不足")
-		return
+	freeAccess := service.FreeAccessEnabled()
+	if !freeAccess {
+		if _, ok := service.UserFromContext(r.Context()); !ok {
+			Fail(w, "未登录或权限不足")
+			return
+		}
 	}
-	credits, err := service.ModelCost(modelName)
-	if err != nil {
-		log.Printf("AI proxy read model cost failed: model=%s err=%v", modelName, err)
-		Fail(w, "AI 接口请求失败")
-		return
+	var credits int
+	if !freeAccess {
+		cost, err := service.ModelCost(modelName)
+		if err != nil {
+			log.Printf("AI proxy read model cost failed: model=%s err=%v", modelName, err)
+			Fail(w, "AI 接口请求失败")
+			return
+		}
+		credits = cost * readAIRequestCount(body, contentType)
 	}
-	credits *= readAIRequestCount(body, contentType)
 	channel, err := service.SelectModelChannel(modelName)
 	if err != nil {
 		log.Printf("AI proxy select channel failed: model=%s err=%v", modelName, err)
@@ -93,13 +98,19 @@ func proxyAIRequest(w http.ResponseWriter, r *http.Request, path string) {
 	if contentType != "" {
 		request.Header.Set("Content-Type", contentType)
 	}
-	if err := service.ConsumeUserCredits(user.ID, modelName, credits, path); err != nil {
-		FailError(w, err)
-		return
+	if !freeAccess {
+		user, _ := service.UserFromContext(r.Context())
+		if err := service.ConsumeUserCredits(user.ID, modelName, credits, path); err != nil {
+			FailError(w, err)
+			return
+		}
 	}
 	copyAIResponse(w, request, func() {
-		if err := service.RefundUserCredits(user.ID, modelName, credits, path); err != nil {
-			log.Printf("AI proxy refund credits failed: user=%s model=%s credits=%d err=%v", user.ID, modelName, credits, err)
+		if !freeAccess {
+			user, _ := service.UserFromContext(r.Context())
+			if err := service.RefundUserCredits(user.ID, modelName, credits, path); err != nil {
+				log.Printf("AI proxy refund credits failed: user=%s model=%s credits=%d err=%v", user.ID, modelName, credits, err)
+			}
 		}
 	})
 }

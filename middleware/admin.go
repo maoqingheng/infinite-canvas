@@ -24,9 +24,11 @@ func AdminAuth(c *gin.Context) {
 func UserAuth(c *gin.Context) {
 	user, ok := authUser(c)
 	if !ok || user.Role == model.UserRoleGuest {
-		handler.Fail(c.Writer, "未登录或权限不足")
-		c.Abort()
-		return
+		if !service.FreeAccessEnabled() {
+			handler.Fail(c.Writer, "未登录或权限不足")
+			c.Abort()
+			return
+		}
 	}
 	c.Request = c.Request.WithContext(service.WithUser(c.Request.Context(), user))
 	c.Next()

@@ -355,3 +355,11 @@ func modelChannelsForModel(channels []model.ModelChannel, modelName string) []mo
 	}
 	return result
 }
+
+func FreeAccessEnabled() bool {
+	settings, err := repository.GetSettings()
+	if err != nil {
+		return false
+	}
+	return settings.Private.FreeAccess.Enabled != nil && *settings.Private.FreeAccess.Enabled
+}
