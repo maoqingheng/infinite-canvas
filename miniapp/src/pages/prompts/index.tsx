@@ -137,8 +137,9 @@ export default function PromptsPage() {
           <Text className="loading-text">加载中...</Text>
         </View>
       ) : (
-        <ScrollView
-          className="prompt-list-scroll"
+        <View className="prompt-list-wrap">
+          <ScrollView
+            className="prompt-list-scroll"
           scrollY
           onScrollToLower={handleScrollToLower}
         >
@@ -172,6 +173,7 @@ export default function PromptsPage() {
             </Text>
           </View>
         </ScrollView>
+        </View>
       )}
 
       {selectedPrompt && (

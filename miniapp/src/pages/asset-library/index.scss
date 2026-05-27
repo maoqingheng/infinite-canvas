@@ -100,9 +100,12 @@
   color: #a8a29e;
 }
 
+.lib-scroll-wrap {
+  padding: 0 32px;
+}
+
 .lib-scroll {
   height: calc(100vh - 420px);
-  padding: 0 32px;
 }
 
 .lib-grid {
@@ -291,6 +294,7 @@
 
 .popup-cover {
   width: 100%;
+  max-height: 50vh;
   border-radius: 16px;
   margin-bottom: 24px;
 }
