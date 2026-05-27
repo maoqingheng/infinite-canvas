@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { View, Text, Input, ScrollView } from '@tarojs/components'
+import { View, Text, Input, Image, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useQuery } from '@tanstack/react-query'
 import { useCopyText } from '../../hooks/use-copy-text'
@@ -182,7 +182,8 @@ export default function AssetLibraryPage() {
         </View>
       </View>
 
-      <ScrollView scrollY className="lib-scroll">
+      <View className="lib-scroll-wrap">
+        <ScrollView scrollY className="lib-scroll">
         <View className="lib-grid">
           {items.map((asset) => (
             <LibraryCard
@@ -221,6 +222,7 @@ export default function AssetLibraryPage() {
           </View>
         </View>
       </ScrollView>
+      </View>
 
       {/* Detail Popup */}
       {selectedAsset && (
@@ -243,7 +245,7 @@ export default function AssetLibraryPage() {
               <Image
                 className="popup-cover"
                 src={selectedAsset.coverUrl}
-                mode="widthFix"
+mode="widthFix"
               />
             )}
 

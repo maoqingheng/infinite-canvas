@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { View, Text, Input, ScrollView } from '@tarojs/components'
+import { View, Text, Input, Image, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useCopyText } from '../../hooks/use-copy-text'
 import { formatBytes } from '../../utils/format'
@@ -179,7 +179,8 @@ export default function AssetsPage() {
         </View>
       </View>
 
-      <ScrollView scrollY className="assets-scroll">
+      <View className="assets-scroll-wrap">
+        <ScrollView scrollY className="assets-scroll">
         <View className="assets-grid">
           {visibleAssets.map((asset) => (
             <AssetCard
@@ -221,6 +222,7 @@ export default function AssetsPage() {
           </View>
         </View>
       </ScrollView>
+      </View>
 
       {/* Form Popup */}
       {showForm && (
@@ -323,7 +325,7 @@ export default function AssetsPage() {
               <Image
                 className="popup-preview-img"
                 src={previewAsset.coverUrl}
-                mode="widthFix"
+mode="widthFix"
               />
             )}
 
