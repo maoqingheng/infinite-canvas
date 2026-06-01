@@ -35,6 +35,7 @@ func SaveSettings(settings model.Settings) (model.Settings, error) {
 	result, err := repository.SaveSettings(settings, now())
 	if err == nil {
 		RefreshPromptSyncScheduler()
+		RefreshStyleSyncScheduler()
 	}
 	return hidePrivateAPIKeys(result), err
 }

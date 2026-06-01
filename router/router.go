@@ -48,6 +48,11 @@ func New() *gin.Engine {
 		handler.AIVideoContent(c.Writer, c.Request, c.Param("id"))
 	})
 	api.GET("/prompts", middleware.OptionalAuth, gin.WrapF(handler.Prompts))
+	api.GET("/styles", middleware.OptionalAuth, gin.WrapF(handler.Styles))
+	api.GET("/styles/image-proxy", gin.WrapF(handler.StyleImageProxy))
+	api.GET("/styles/:id/details", middleware.OptionalAuth, func(c *gin.Context) {
+		handler.StyleDetails(c.Writer, c.Request, c.Param("id"))
+	})
 	api.GET("/assets", middleware.OptionalAuth, gin.WrapF(handler.Assets))
 	api.POST("/admin/login", gin.WrapF(handler.AdminLogin))
 
@@ -77,6 +82,8 @@ func New() *gin.Engine {
 	admin.DELETE("/prompts/:id", func(c *gin.Context) {
 		handler.AdminDeletePrompt(c.Writer, c.Request, c.Param("id"))
 	})
+	admin.GET("/styles", gin.WrapF(handler.AdminStyles))
+	admin.POST("/styles/sync", gin.WrapF(handler.AdminSyncStyles))
 	admin.GET("/assets", gin.WrapF(handler.AdminAssets))
 	admin.POST("/assets", gin.WrapF(handler.AdminSaveAsset))
 	admin.DELETE("/assets/:id", func(c *gin.Context) {

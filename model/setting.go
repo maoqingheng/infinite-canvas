@@ -62,12 +62,19 @@ type FreeAccessSetting struct {
 type PrivateSetting struct {
 	Channels   []ModelChannel     `json:"channels"`
 	PromptSync PromptSyncSetting  `json:"promptSync"`
+	StyleSync  StyleSyncSetting   `json:"styleSync"`
 	Auth       PrivateAuthSetting `json:"auth"`
 	FreeAccess FreeAccessSetting  `json:"freeAccess"`
 }
 
 // PromptSyncSetting 提示词定时同步配置。
 type PromptSyncSetting struct {
+	Enabled *bool  `json:"enabled"`
+	Cron    string `json:"cron"`
+}
+
+// StyleSyncSetting 风格定时同步配置。
+type StyleSyncSetting struct {
 	Enabled *bool  `json:"enabled"`
 	Cron    string `json:"cron"`
 }

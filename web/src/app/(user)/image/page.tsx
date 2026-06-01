@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { App, Button, Checkbox, Drawer, Empty, Image, Input, Modal, Tag, Typography } from "antd";
 import localforage from "localforage";
 import { saveAs } from "file-saver";
+import { useSearchParams } from "next/navigation";
 
 import { ImageSettingsPanel } from "@/components/image-settings-panel";
 import { ModelPicker } from "@/components/model-picker";
@@ -67,6 +68,7 @@ const logStore = localforage.createInstance({ name: "infinite-canvas", storeName
 
 export default function ImagePage() {
     const { message } = App.useApp();
+    const searchParams = useSearchParams();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const config = useConfigStore((state) => state.config);
     const effectiveConfig = useEffectiveConfig();
@@ -101,6 +103,27 @@ export default function ImagePage() {
 
     useEffect(() => {
         void refreshLogs();
+    }, []);
+
+    useEffect(() => {
+        const styleRef = searchParams.get("styleRef");
+        const styleName = searchParams.get("styleName");
+        if (!styleRef) return;
+        const initStyleRef = async () => {
+            try {
+                const proxyUrl = `/api/styles/image-proxy?url=${encodeURIComponent(styleRef)}`;
+                const image = await uploadImage(proxyUrl);
+                setReferences([{ id: nanoid(), name: styleName || "风格参考图", type: image.mimeType, dataUrl: image.url, storageKey: image.storageKey, locked: true }]);
+                if (!prompt.trim()) {
+                    setPrompt("按照图一的风格修改图二");
+                }
+            } catch {
+                message.error("加载风格参考图失败");
+            }
+        };
+        void initStyleRef();
+        // Only run once on mount when styleRef is present
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const addReferences = async (files?: FileList | null) => {
@@ -374,18 +397,26 @@ export default function ImagePage() {
                                     {references.map((item) => (
                                         <div key={item.id} className="group relative size-20 shrink-0 overflow-hidden rounded-md border border-stone-200 dark:border-stone-800">
                                             <img src={item.dataUrl} alt={item.name} className="size-full object-cover" />
-                                            <button
-                                                type="button"
-                                                className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex"
-                                                onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
-                                                aria-label="移除参考图"
-                                            >
-                                                <Trash2 className="size-3.5" />
-                                            </button>
+                                            {item.locked ? null : (
+                                                <button
+                                                    type="button"
+                                                    className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex"
+                                                    onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
+                                                    aria-label="移除参考图"
+                                                >
+                                                    <Trash2 className="size-3.5" />
+                                                </button>
+                                            )}
+                                            {item.locked ? (
+                                                <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-center text-[10px] text-white">风格参考</div>
+                                            ) : null}
                                         </div>
                                     ))}
                                     {!references.length ? <div className="flex min-w-full items-center justify-center text-sm text-stone-500">暂无参考图</div> : null}
                                 </div>
+                                {references.some((ref) => ref.locked) ? (
+                                    <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">已添加风格参考图，请上传需要修改的图片作为第二张参考图</p>
+                                ) : null}
                             </div>
 
                             <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm dark:border-stone-800 dark:bg-stone-900 sm:hidden">
