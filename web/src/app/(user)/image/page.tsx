@@ -95,6 +95,7 @@ function ImagePageContent() {
     const [settingsOpen, setSettingsOpen] = useState(false);
     const [promptDialogOpen, setPromptDialogOpen] = useState(false);
     const [assetPickerOpen, setAssetPickerOpen] = useState(false);
+    const [loadingUrlReference, setLoadingUrlReference] = useState(false);
     const [startedAt, setStartedAt] = useState(0);
     const [elapsedMs, setElapsedMs] = useState(0);
     const [selectedLogIds, setSelectedLogIds] = useState<string[]>([]);
@@ -127,6 +128,7 @@ function ImagePageContent() {
             return;
         }
         const initUrlReference = async () => {
+            setLoadingUrlReference(true);
             try {
                 const proxyUrl = `/api/styles/image-proxy?url=${encodeURIComponent(referenceUrl)}`;
                 const image = await uploadImage(proxyUrl);
@@ -136,6 +138,8 @@ function ImagePageContent() {
                 }
             } catch {
                 message.error(styleRef ? "加载风格参考图失败" : "加载图片模板失败");
+            } finally {
+                setLoadingUrlReference(false);
             }
         };
         void initUrlReference();
@@ -435,7 +439,13 @@ function ImagePageContent() {
                                             ) : null}
                                         </div>
                                     ))}
-                                    {!references.length ? <div className="flex min-w-full items-center justify-center text-sm text-stone-500">暂无参考图</div> : null}
+                                    {loadingUrlReference ? (
+                                        <div className="flex min-w-full items-center justify-center gap-2 text-sm text-stone-500">
+                                            <LoaderCircle className="size-4 animate-spin" />
+                                            <span>正在加载参考图</span>
+                                        </div>
+                                    ) : null}
+                                    {!loadingUrlReference && !references.length ? <div className="flex min-w-full items-center justify-center text-sm text-stone-500">暂无参考图</div> : null}
                                 </div>
                                 {references.some((ref) => ref.locked) ? (
                                     <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">已添加风格参考图，请上传需要修改的图片作为第二张参考图</p>
