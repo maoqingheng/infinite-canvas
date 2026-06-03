@@ -10,7 +10,7 @@ export function PromptDetailDialog({ prompt, onClose, onCopy, onSaveAsset }: { p
         const params = new URLSearchParams();
         if (item.coverUrl) params.set("templateRef", item.coverUrl);
         if (item.title) params.set("templateName", item.title);
-        if (item.prompt.trim()) params.set("prompt", item.prompt.trim());
+        if (item.prompt.trim()) params.set("prompt", "参考图一风格或提示生成图二\n" + item.prompt.trim());
         return `/image?${params.toString()}`;
     };
 
