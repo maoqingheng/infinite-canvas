@@ -3,7 +3,7 @@ FROM oven/bun:1.3.13 AS web-build
 
 WORKDIR /app/web
 COPY web/package.json web/bun.lock ./
-RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile --registry=https://registry.npmmirror.com --cache-dir=/root/.bun/install/cache
+RUN --mount=type=cache,target=/root/.bun/install/cache bun install --frozen-lockfile --cache-dir=/root/.bun/install/cache
 COPY VERSION /app/VERSION
 COPY CHANGELOG.md /app/CHANGELOG.md
 COPY web ./
@@ -31,11 +31,16 @@ WORKDIR /app
 COPY VERSION /app/VERSION
 COPY CHANGELOG.md /app/CHANGELOG.md
 COPY --from=api-build /server /app/server
-COPY --from=web-build /app/web /app/web
+COPY --from=web-build /app/web/public /app/web/public
+COPY --from=web-build /app/web/.next/standalone /app/web
+COPY --from=web-build /app/web/.next/static /app/web/.next/static
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 ENV PROMPT_DATA_DIR=/app/data/prompts
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /app/data/prompts
 
 EXPOSE 3000
 # 先启动内部 Go API，再由 Next.js 提供页面并代理 /api/*。
-CMD ["sh", "-c", "PORT=8080 /app/server & cd /app/web && HOSTNAME=0.0.0.0 PORT=3000 npm run start"]
+CMD ["sh", "-c", "PORT=8080 /app/server & cd /app/web && node server.js"]
