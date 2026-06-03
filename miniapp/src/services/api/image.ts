@@ -85,6 +85,12 @@ function readRequestError(error: unknown, fallback: string) {
   return fallback
 }
 
+function parseResponsePayload(data: ImageApiResponse | string) {
+  return typeof data === 'string'
+    ? (JSON.parse(data || '{}') as ImageApiResponse)
+    : data
+}
+
 function withSystemPrompt(config: AiConfig, prompt: string) {
   const systemPrompt = config.systemPrompt.trim()
   return systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt
@@ -129,11 +135,84 @@ async function resolveUploadFilePath(dataUrl: string) {
   }
   if (dataUrl.startsWith('data:')) {
     const [, content = ''] = dataUrl.split(',', 2)
-    const filePath = `${Taro.env.USER_DATA_PATH}/reference-${Date.now()}.png`
+    const filePath = `${Taro.env.USER_DATA_PATH}/reference-${Date.now()}-${Math.random().toString(36).slice(2)}.png`
     Taro.getFileSystemManager().writeFileSync(filePath, content, 'base64')
     return filePath
   }
   return dataUrl
+}
+
+function encodeUtf8(value: string) {
+  if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(value)
+  const encoded = unescape(encodeURIComponent(value))
+  const bytes = new Uint8Array(encoded.length)
+  for (let i = 0; i < encoded.length; i += 1) bytes[i] = encoded.charCodeAt(i)
+  return bytes
+}
+
+function readFileBytes(filePath: string) {
+  const data = Taro.getFileSystemManager().readFileSync(filePath)
+  return typeof data === 'string' ? encodeUtf8(data) : new Uint8Array(data)
+}
+
+function concatBytes(parts: Uint8Array[]) {
+  const length = parts.reduce((sum, part) => sum + part.length, 0)
+  const bytes = new Uint8Array(length)
+  let offset = 0
+  for (const part of parts) {
+    bytes.set(part, offset)
+    offset += part.length
+  }
+  return bytes.buffer
+}
+
+function guessImageMimeType(filePath: string, type?: string) {
+  if (type?.startsWith('image/')) return type
+  const ext = filePath.split('?')[0].split('#')[0].split('.').pop()?.toLowerCase()
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg'
+  if (ext === 'webp') return 'image/webp'
+  if (ext === 'gif') return 'image/gif'
+  if (ext === 'bmp') return 'image/bmp'
+  return 'image/png'
+}
+
+function uploadFileName(filePath: string, index: number) {
+  const name = filePath.split('?')[0].split('#')[0].split('/').pop()
+  return name && name.includes('.') ? name : `reference-${index + 1}.png`
+}
+
+async function buildMultipartImageBody(
+  fields: Record<string, string>,
+  references: Array<{ dataUrl: string; name?: string; type?: string }>
+) {
+  const boundary = `miniapp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const parts: Uint8Array[] = []
+  for (const [key, value] of Object.entries(fields)) {
+    parts.push(
+      encodeUtf8(
+        `--${boundary}\r\nContent-Disposition: form-data; name="${key}"\r\n\r\n${value}\r\n`
+      )
+    )
+  }
+  const filePaths = await Promise.all(
+    references.map((item) => resolveUploadFilePath(item.dataUrl))
+  )
+  filePaths.forEach((filePath, index) => {
+    const reference = references[index]
+    const filename = uploadFileName(filePath, index)
+    parts.push(
+      encodeUtf8(
+        `--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="${filename}"\r\nContent-Type: ${guessImageMimeType(filePath, reference.type)}\r\n\r\n`
+      )
+    )
+    parts.push(readFileBytes(filePath))
+    parts.push(encodeUtf8('\r\n'))
+  })
+  parts.push(encodeUtf8(`--${boundary}--\r\n`))
+  return {
+    body: concatBytes(parts),
+    contentType: `multipart/form-data; boundary=${boundary}`,
+  }
 }
 
 export async function requestGeneration(
@@ -166,27 +245,31 @@ export async function requestGeneration(
 export async function requestEdit(
   config: AiConfig,
   prompt: string,
-  references: Array<{ dataUrl: string }>
+  references: Array<{ dataUrl: string; name?: string; type?: string }>
 ) {
   const n = Math.max(1, Math.min(15, Math.floor(Math.abs(Number(config.count)) || 1)))
   const pixelSize = resolveSize(config.quality, config.size)
   const requestPrompt = buildImageReferencePromptText(prompt, references)
   try {
-    const filePath = await resolveUploadFilePath(references[0]?.dataUrl || '')
-    const response = await Taro.uploadFile({
+    const formData = {
+      model: config.model,
+      prompt: withSystemPrompt(config, requestPrompt),
+      n: String(n),
+      ...(pixelSize ? { quality: config.quality, size: pixelSize } : {}),
+      response_format: 'b64_json',
+    }
+    const { body, contentType } = await buildMultipartImageBody(formData, references)
+    const response = await Taro.request<ImageApiResponse | string>({
       url: aiApiUrl(config, '/images/edits'),
-      filePath,
-      name: 'image',
-      header: aiHeaders(config),
-      formData: {
-        model: config.model,
-        prompt: withSystemPrompt(config, requestPrompt),
-        n: String(n),
-        ...(pixelSize ? { quality: config.quality, size: pixelSize } : {}),
-        response_format: 'b64_json',
+      method: 'POST',
+      header: {
+        ...aiHeaders(config),
+        'Content-Type': contentType,
       },
+      data: body,
+      timeout: 180000,
     })
-    const payload = JSON.parse(response.data || '{}') as ImageApiResponse
+    const payload = parseResponsePayload(response.data)
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw new Error(payload.msg || payload.error?.message || '请求失败')
     }
