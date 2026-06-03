@@ -42,11 +42,12 @@ export async function fetchStyles({ keyword, page, pageSize }: { keyword?: strin
     );
 }
 
-export async function fetchStyleDetails(categoryId: number, { keyword, page, pageSize }: { keyword?: string; page?: number; pageSize?: number } = {}) {
+export async function fetchStyleDetails(categoryId: number, { keyword, isHot, page, pageSize }: { keyword?: string; isHot?: number; page?: number; pageSize?: number } = {}) {
     return apiGet<StyleDetailListResponse>(
         `/api/styles/${categoryId}/details`,
         compactApiParams({
             ...(keyword ? { keyword } : {}),
+            ...(isHot ? { ishot: isHot } : {}),
             ...(page ? { page } : {}),
             ...(pageSize ? { pageSize } : {}),
         }),

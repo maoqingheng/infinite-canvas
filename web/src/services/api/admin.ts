@@ -96,6 +96,7 @@ export type AdminPromptQuery = {
     keyword?: string;
     category?: string;
     tag?: string[];
+    isHot?: number;
     page?: number;
     pageSize?: number;
 };

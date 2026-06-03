@@ -61,6 +61,7 @@
 | `tags`       | json   | 标签列表                         |
 | `category`   | string | 分类标识                         |
 | `preview`    | text   | Markdown 展示内容，可包含文本、图片、视频链接等 |
+| `is_hot`     | number | 是否热门：`0` 普通、`1` 热门，默认 `0` |
 | `created_at` | string | 创建时间                         |
 | `updated_at` | string | 更新时间                         |
 

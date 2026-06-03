@@ -67,21 +67,44 @@ func SyncPromptCategory(category string) ([]model.PromptCategory, error) {
 }
 
 func buildPromptCategory(category string) ([]model.Prompt, error) {
+	var items []model.Prompt
+	var err error
 	switch category {
 	case "gpt-image-2-prompts":
-		return buildGptImage2Prompts()
+		items, err = buildGptImage2Prompts()
 	case "awesome-gpt-image":
-		return buildAwesomeGptImagePrompts()
+		items, err = buildAwesomeGptImagePrompts()
 	case "awesome-gpt4o-image-prompts":
-		return buildAwesomeGpt4oImagePrompts()
+		items, err = buildAwesomeGpt4oImagePrompts()
 	case "youmind-gpt-image-2":
-		return buildYouMindGptImage2Prompts()
+		items, err = buildYouMindGptImage2Prompts()
 	case "youmind-nano-banana-pro":
-		return buildYouMindNanoBananaProPrompts()
+		items, err = buildYouMindNanoBananaProPrompts()
 	case "davidwu-gpt-image2-prompts":
-		return buildDavidWuGptImage2Prompts()
+		items, err = buildDavidWuGptImage2Prompts()
+	default:
+		return nil, errors.New("未知提示词分类")
 	}
-	return nil, errors.New("未知提示词分类")
+	if err != nil {
+		return nil, err
+	}
+	markFirstPromptByTagHot(items)
+	return items, nil
+}
+
+func markFirstPromptByTagHot(items []model.Prompt) {
+	seen := map[string]bool{}
+	for i := range items {
+		items[i].IsHot = 0
+		for _, tag := range items[i].Tags {
+			tag = strings.TrimSpace(tag)
+			if tag == "" || seen[tag] {
+				continue
+			}
+			seen[tag] = true
+			items[i].IsHot = 1
+		}
+	}
 }
 
 func fetchText(baseURL, file string) (string, error) {

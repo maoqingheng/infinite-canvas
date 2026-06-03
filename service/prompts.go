@@ -30,6 +30,9 @@ func SavePrompt(item model.Prompt) (model.Prompt, error) {
 	if item.Category == "" {
 		item.Category = repository.PromptCategories()[0].Category
 	}
+	if item.IsHot != 1 {
+		item.IsHot = 0
+	}
 	if item.ID == "" {
 		item.ID = newID(item.Category)
 		item.CreatedAt = now

@@ -8,6 +8,7 @@ type Query struct {
 	Tags     []string
 	Category string
 	Type     string
+	IsHot    int
 	Page     int
 	PageSize int
 }

@@ -17,6 +17,7 @@ export default function AdminPromptsPage() {
         keyword,
         category,
         tag,
+        isHot,
         page,
         pageSize,
         total,
@@ -25,6 +26,7 @@ export default function AdminPromptsPage() {
         searchPrompts,
         changeCategory,
         changeTag,
+        changeIsHot,
         changePage,
         changePageSize,
         resetFilters,
@@ -49,7 +51,10 @@ export default function AdminPromptsPage() {
     const tagOptions = tags.map((item) => ({ label: item, value: item }));
 
     useEffect(() => {
-        if (editingPrompt) form.setFieldsValue({ ...editingPrompt, tagText: editingPrompt.tags?.join(", ") || "" });
+        if (editingPrompt) {
+            form.resetFields();
+            form.setFieldsValue({ isHot: 0, ...editingPrompt, tagText: editingPrompt.tags?.join(", ") || "" });
+        }
     }, [editingPrompt, form]);
 
     useEffect(() => setKeywordText(keyword), [keyword]);
@@ -60,6 +65,7 @@ export default function AdminPromptsPage() {
             ...editingPrompt,
             ...value,
             category: value.category || defaultCategory,
+            isHot: Number(value.isHot) || 0,
             tags: (value.tagText || "")
                 .split(",")
                 .map((item) => item.trim())
@@ -96,6 +102,12 @@ export default function AdminPromptsPage() {
             dataIndex: "category",
             width: 150,
             render: (_, item) => <Typography.Text type="secondary">{categoryName(item.category)}</Typography.Text>,
+        },
+        {
+            title: "是否热门",
+            dataIndex: "isHot",
+            width: 90,
+            render: (_, item) => (item.isHot === 1 ? <Tag color="red">热门</Tag> : <Tag>普通</Tag>),
         },
         {
             title: "标签",
@@ -151,6 +163,18 @@ export default function AdminPromptsPage() {
                                     <Select mode="multiple" allowClear maxTagCount="responsive" value={tag} onChange={changeTag} options={tagOptions} placeholder="全部标签" />
                                 </Form.Item>
                             </Col>
+                            <Col flex="160px">
+                                <Form.Item label="是否热门">
+                                    <Select
+                                        value={isHot}
+                                        onChange={changeIsHot}
+                                        options={[
+                                            { label: "全部", value: 0 },
+                                            { label: "热门", value: 1 },
+                                        ]}
+                                    />
+                                </Form.Item>
+                            </Col>
                             <Col flex="none">
                                 <Form.Item>
                                     <Space>
@@ -195,7 +219,7 @@ export default function AdminPromptsPage() {
                         <Button key="sync" icon={<SyncOutlined />} onClick={() => setIsSyncOpen(true)}>
                             同步
                         </Button>,
-                        <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => setEditingPrompt({ category: defaultCategory, tags: [] })}>
+                        <Button key="add" type="primary" icon={<PlusOutlined />} onClick={() => setEditingPrompt({ category: defaultCategory, tags: [], isHot: 0 })}>
                             新增
                         </Button>,
                     ]}
@@ -218,6 +242,14 @@ export default function AdminPromptsPage() {
                     </Form.Item>
                     <Form.Item name="category" label="分类">
                         <Select options={categories.map((item) => ({ label: item.name, value: item.category }))} />
+                    </Form.Item>
+                    <Form.Item name="isHot" label="是否热门" initialValue={0}>
+                        <Select
+                            options={[
+                                { label: "普通", value: 0 },
+                                { label: "热门", value: 1 },
+                            ]}
+                        />
                     </Form.Item>
                     <Form.Item name="coverUrl" label="封面 URL">
                         <Input />
@@ -242,6 +274,7 @@ export default function AdminPromptsPage() {
                                 </Typography.Title>
                                 <Space wrap>
                                     <Tag>{categoryName(detailPrompt.category)}</Tag>
+                                    {detailPrompt.isHot === 1 ? <Tag color="red">热门</Tag> : <Tag>普通</Tag>}
                                     {(detailPrompt.tags || []).map((tag) => (
                                         <Tag key={tag}>{tag}</Tag>
                                     ))}

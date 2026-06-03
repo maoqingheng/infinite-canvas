@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/basketikun/infinite-canvas/model"
@@ -14,6 +15,8 @@ import (
 )
 
 const styleAPIURL = "https://camera.animelook.top/api/normal/styles"
+
+var excludedStyleNames = []string{"自定义"}
 
 type styleResponseData struct {
 	Data    []styleAPICategory `json:"data"`
@@ -43,19 +46,18 @@ func SyncStyles() error {
 	if err != nil {
 		return err
 	}
+	categories = filterStyleCategories(categories)
 	now := time.Now().Format(time.RFC3339)
 
 	styleItems := make([]model.Style, 0, len(categories))
 	for _, c := range categories {
-		if c.ID <= 0 {
-			continue
-		}
-		coverURL := randomStyleCover(c.ActiveStyles)
+		activeStyles := c.ActiveStyles
+		coverURL := randomStyleCover(activeStyles)
 		styleItems = append(styleItems, model.Style{
 			ID:          c.ID,
 			Name:        c.Name,
 			CoverURL:    coverURL,
-			ActiveCount: c.ActiveCount,
+			ActiveCount: len(activeStyles),
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		})
@@ -64,12 +66,10 @@ func SyncStyles() error {
 		return err
 	}
 
+	detailItems := make([]model.StyleDetail, 0)
 	for _, c := range categories {
-		if c.ID <= 0 || len(c.ActiveStyles) == 0 {
-			continue
-		}
-		detailItems := make([]model.StyleDetail, 0, len(c.ActiveStyles))
-		for _, d := range c.ActiveStyles {
+		activeStyles := c.ActiveStyles
+		for _, d := range activeStyles {
 			if d.ID <= 0 {
 				continue
 			}
@@ -85,11 +85,51 @@ func SyncStyles() error {
 				UpdatedAt:  now,
 			})
 		}
-		if err := repository.ReplaceStyleDetails(c.ID, detailItems); err != nil {
-			log.Printf("replace style details failed category_id=%d err=%v", c.ID, err)
-		}
+	}
+	if err := repository.ReplaceAllStyleDetails(detailItems); err != nil {
+		log.Printf("replace style details failed err=%v", err)
 	}
 	return nil
+}
+
+func filterStyleDetails(details []styleAPIDetail) []styleAPIDetail {
+	items := make([]styleAPIDetail, 0, len(details))
+	for _, detail := range details {
+		if isExcludedStyleName(detail.Name) {
+			continue
+		}
+		items = append(items, detail)
+	}
+	return items
+}
+
+func filterStyleCategories(categories []styleAPICategory) []styleAPICategory {
+	items := make([]styleAPICategory, 0, len(categories))
+	for _, category := range categories {
+		if category.ID <= 0 || isExcludedStyleName(category.Name) {
+			continue
+		}
+		category.ActiveStyles = filterStyleDetails(category.ActiveStyles)
+		if len(category.ActiveStyles) == 0 {
+			continue
+		}
+		category.ActiveCount = len(category.ActiveStyles)
+		items = append(items, category)
+	}
+	return items
+}
+
+func isExcludedStyleName(name string) bool {
+	styleName := strings.TrimSpace(name)
+	if styleName == "" {
+		return false
+	}
+	for _, excludedName := range excludedStyleNames {
+		if styleName == strings.TrimSpace(excludedName) {
+			return true
+		}
+	}
+	return false
 }
 
 func fetchStyles() ([]styleAPICategory, error) {
@@ -114,6 +154,9 @@ func fetchStyles() ([]styleAPICategory, error) {
 }
 
 func randomStyleCover(details []styleAPIDetail) string {
+	if len(details) == 0 {
+		return ""
+	}
 	for _, i := range rand.Perm(len(details)) {
 		if details[i].Logo != "" {
 			return details[i].Logo

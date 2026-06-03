@@ -138,6 +138,9 @@ func applyPromptFilters(tx *gorm.DB, q model.Query) *gorm.DB {
 	if isActivePromptOption(q.Category) {
 		tx = tx.Where("category = ?", q.Category)
 	}
+	if q.IsHot > 0 {
+		tx = tx.Where("is_hot = ?", q.IsHot)
+	}
 	return applyPromptTagsFilter(tx, q.Tags)
 }
 

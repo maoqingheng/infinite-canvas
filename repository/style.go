@@ -41,6 +41,9 @@ func ListStyleDetails(categoryID int, q model.Query) ([]model.StyleDetail, int64
 		like := "%" + q.Keyword + "%"
 		tx = tx.Where("name LIKE ?", like)
 	}
+	if q.IsHot > 0 {
+		tx = tx.Where("is_hot = ?", q.IsHot)
+	}
 	var total int64
 	if err := tx.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -82,6 +85,22 @@ func ReplaceStyleDetails(categoryID int, items []model.StyleDetail) error {
 		}
 		for i := range items {
 			items[i].CategoryID = categoryID
+		}
+		return tx.Create(&items).Error
+	})
+}
+
+func ReplaceAllStyleDetails(items []model.StyleDetail) error {
+	db, err := DB()
+	if err != nil {
+		return err
+	}
+	return db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("1 = 1").Delete(&model.StyleDetail{}).Error; err != nil {
+			return err
+		}
+		if len(items) == 0 {
+			return nil
 		}
 		return tx.Create(&items).Error
 	})

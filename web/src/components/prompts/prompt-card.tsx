@@ -37,7 +37,14 @@ export function PromptCard({
             <button type="button" className="block w-full text-left" onClick={onOpen}>
                 <div className="p-4">
                     <div className="flex items-start justify-between gap-3">
-                        <h2 className="line-clamp-1 text-sm font-semibold text-stone-950 dark:text-stone-100">{item.title}</h2>
+                        <div className="min-w-0">
+                            <h2 className="line-clamp-1 text-sm font-semibold text-stone-950 dark:text-stone-100">{item.title}</h2>
+                            {item.isHot === 1 ? (
+                                <Tag color="red" className="mt-1 text-[11px]">
+                                    热门
+                                </Tag>
+                            ) : null}
+                        </div>
                         <span className="shrink-0 text-xs text-stone-400 dark:text-stone-500">{formatPromptDate(item.updatedAt)}</span>
                     </div>
                     <p className="mt-2 line-clamp-3 text-xs leading-5 text-stone-600 dark:text-stone-400">{item.prompt}</p>
@@ -50,7 +57,7 @@ export function PromptCard({
                     </div>
                 </div>
             </button>
-            <div className="flex items-center gap-2 px-4 pb-4">
+            <div className="flex flex-wrap items-center gap-2 px-4 pb-4">
                 <Button block={actionType === "primary"} type={actionType} size="small" icon={actionIcon} onClick={onCopy}>
                     {actionLabel}
                 </Button>

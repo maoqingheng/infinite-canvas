@@ -41,11 +41,16 @@ func parseQuery(r *http.Request) model.Query {
 	q := r.URL.Query()
 	page, _ := strconv.Atoi(q.Get("page"))
 	pageSize, _ := strconv.Atoi(q.Get("pageSize"))
+	isHot, _ := strconv.Atoi(q.Get("isHot"))
+	if isHot == 0 {
+		isHot, _ = strconv.Atoi(q.Get("ishot"))
+	}
 	return model.Query{
 		Keyword:  q.Get("keyword"),
 		Tags:     q["tag"],
 		Category: q.Get("category"),
 		Type:     q.Get("type"),
+		IsHot:    isHot,
 		Page:     page,
 		PageSize: pageSize,
 	}

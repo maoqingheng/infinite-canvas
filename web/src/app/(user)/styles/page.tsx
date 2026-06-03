@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { List, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { App, Button, Card, Empty, Input, Spin } from "antd";
 import { useQuery } from "@tanstack/react-query";
@@ -28,8 +28,17 @@ export default function StylesPage() {
     return (
         <div className="flex h-full flex-col overflow-hidden bg-background text-stone-800 dark:text-stone-100">
             <main className="min-h-0 flex-1 overflow-y-auto bg-background bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] px-6 py-8 [background-size:16px_16px] dark:bg-[radial-gradient(rgba(245,245,244,.16)_1px,transparent_1px)]">
-
-
+                <div className="pb-8">
+                    <div className="mx-auto max-w-5xl text-center">
+                        <h1 className="text-4xl font-semibold tracking-tight text-stone-950 dark:text-stone-100">风格库</h1>
+                        <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">共 {stylesQuery.data?.total || 0} 个风格分类，挑选稳定风格模板快速生成同款图片。</p>
+                    </div>
+                    {stylesQuery.isLoading ? (
+                        <div className="flex h-60 items-center justify-center">
+                            <Spin />
+                        </div>
+                    ) : null}
+                </div>
                 {!stylesQuery.isLoading ? (
                     <div className="mx-auto max-w-7xl">
                         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
@@ -57,7 +66,7 @@ export default function StylesPage() {
                                     </div>
                                     <div className="flex items-center gap-2 px-4 pb-4">
                                         <Link href={`/styles/${style.id}`}>
-                                            <Button size="small">
+                                            <Button size="small" icon={<List className="size-3.5" />}>
                                                 挑选子模版
                                             </Button>
                                         </Link>

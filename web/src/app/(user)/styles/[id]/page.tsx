@@ -36,10 +36,11 @@ export default function StyleDetailPage() {
     const currentStyle = styles.find((s) => s.id === categoryId);
     const details = detailsQuery.data?.items || [];
 
-    const buildStyleRefLink = (detail: { logo: string; name: string }) => {
+    const buildStyleRefLink = (detail: { logo: string; name: string; fePrompt?: string }) => {
         const params = new URLSearchParams();
         if (detail.logo) params.set("styleRef", detail.logo);
         if (detail.name) params.set("styleName", detail.name);
+        if (detail.fePrompt?.trim()) params.set("prompt", detail.fePrompt.trim());
         return `/image?${params.toString()}`;
     };
 

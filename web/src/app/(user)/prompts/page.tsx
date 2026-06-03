@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderPlus, Search } from "lucide-react";
+import { FolderPlus, Search, Sparkles } from "lucide-react";
 import { type UIEvent, useEffect, useState } from "react";
 import { App, Button, Empty, Input, Spin, Tag } from "antd";
 
@@ -36,6 +36,14 @@ export default function PromptsPage() {
     const savePromptAsset = (item: Prompt) => {
         addAsset({ kind: "text", title: item.title, coverUrl: item.coverUrl, tags: item.tags, source: item.category, data: { content: item.prompt }, metadata: { source: "prompt-library", promptId: item.id, githubUrl: item.githubUrl } });
         message.success("已加入我的素材");
+    };
+
+    const buildPromptImageLink = (item: Prompt) => {
+        const params = new URLSearchParams();
+        if (item.coverUrl) params.set("templateRef", item.coverUrl);
+        if (item.title) params.set("templateName", item.title);
+        if (item.prompt.trim()) params.set("prompt", '参考图一生成图二\n' + item.prompt.trim());
+        return `/image?${params.toString()}`;
     };
 
     const handleListScroll = (event: UIEvent<HTMLDivElement>) => {
@@ -107,9 +115,14 @@ export default function PromptsPage() {
                                     onOpen={() => setSelectedPrompt(item)}
                                     onCopy={() => copyText(item.prompt, "提示词已复制")}
                                     extraAction={
-                                        <Button size="small" icon={<FolderPlus className="size-3.5" />} onClick={() => savePromptAsset(item)}>
-                                            加入我的素材
-                                        </Button>
+                                        <>
+                                            <Button size="small" type="primary" href={buildPromptImageLink(item)} icon={<Sparkles className="size-3.5" />}>
+                                                生成同款
+                                            </Button>
+                                            <Button size="small" icon={<FolderPlus className="size-3.5" />} onClick={() => savePromptAsset(item)}>
+                                                加入我的素材
+                                            </Button>
+                                        </>
                                     }
                                 />
                             ))}

@@ -18,6 +18,7 @@ export function useAdminPrompts() {
     const [keyword, setKeyword] = useState("");
     const [category, setCategory] = useState("");
     const [tag, setTag] = useState<string[]>([]);
+    const [isHot, setIsHot] = useState(0);
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(defaultPageSize);
 
@@ -29,8 +30,8 @@ export function useAdminPrompts() {
     });
 
     const promptsQuery = useQuery({
-        queryKey: ["admin", "prompts", token, keyword, category, tag, page, pageSize],
-        queryFn: () => fetchAdminPrompts(token, { keyword, category, tag, page, pageSize }),
+        queryKey: ["admin", "prompts", token, keyword, category, tag, isHot, page, pageSize],
+        queryFn: () => fetchAdminPrompts(token, { keyword, category, tag, isHot: isHot || undefined, page, pageSize }),
         enabled: Boolean(token),
         retry: false,
     });
@@ -91,12 +92,13 @@ export function useAdminPrompts() {
         if (errorMessage.includes("未登录") || errorMessage.includes("权限不足") || errorMessage.includes("登录状态无效")) clearSession();
     }, [categoriesQuery.error, clearSession, message, promptsQuery.error]);
 
-    const updateFilters = (next: Partial<{ keyword: string; category: string; tag: string[]; page: number; pageSize: number }>) => {
-        const queryState = { keyword, category, tag, page, pageSize, ...next };
-        if (next.keyword !== undefined || next.category !== undefined || next.tag !== undefined || next.pageSize !== undefined) queryState.page = 1;
+    const updateFilters = (next: Partial<{ keyword: string; category: string; tag: string[]; isHot: number; page: number; pageSize: number }>) => {
+        const queryState = { keyword, category, tag, isHot, page, pageSize, ...next };
+        if (next.keyword !== undefined || next.category !== undefined || next.tag !== undefined || next.isHot !== undefined || next.pageSize !== undefined) queryState.page = 1;
         setKeyword(queryState.keyword);
         setCategory(queryState.category);
         setTag(queryState.tag);
+        setIsHot(queryState.isHot);
         setPage(queryState.page);
         setPageSize(queryState.pageSize);
     };
@@ -110,6 +112,7 @@ export function useAdminPrompts() {
         keyword,
         category,
         tag,
+        isHot,
         page,
         pageSize,
         total: data?.total || 0,
@@ -119,9 +122,10 @@ export function useAdminPrompts() {
         searchPrompts: (value = keyword) => updateFilters({ keyword: value }),
         changeCategory: (value: string) => updateFilters({ category: value, tag: [] }),
         changeTag: (value: string[]) => updateFilters({ tag: value }),
+        changeIsHot: (value: number) => updateFilters({ isHot: value }),
         changePage: (value: number) => updateFilters({ page: value }),
         changePageSize: (value: number) => updateFilters({ pageSize: value }),
-        resetFilters: () => updateFilters({ keyword: "", category: "", tag: [], page: 1, pageSize: defaultPageSize }),
+        resetFilters: () => updateFilters({ keyword: "", category: "", tag: [], isHot: 0, page: 1, pageSize: defaultPageSize }),
         refreshPrompts: async () => {
             await categoriesQuery.refetch();
             await promptsQuery.refetch();

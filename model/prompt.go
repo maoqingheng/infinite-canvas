@@ -10,6 +10,7 @@ type Prompt struct {
 	Category  string   `json:"category" gorm:"index"`
 	GithubURL string   `json:"githubUrl" gorm:"-"`
 	Preview   string   `json:"preview"`
+	IsHot     int      `json:"isHot" gorm:"column:is_hot;default:0"`
 	CreatedAt string   `json:"createdAt"`
 	UpdatedAt string   `json:"updatedAt"`
 }

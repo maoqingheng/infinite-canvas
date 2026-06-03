@@ -1,11 +1,19 @@
 "use client";
 
-import { Copy, FolderPlus } from "lucide-react";
+import { Copy, FolderPlus, Sparkles } from "lucide-react";
 import { Button, Modal, Space, Tag } from "antd";
 
 import { formatPromptDate, type Prompt } from "@/services/api/prompts";
 
 export function PromptDetailDialog({ prompt, onClose, onCopy, onSaveAsset }: { prompt: Prompt | null; onClose: () => void; onCopy: (prompt: string) => void; onSaveAsset?: (prompt: Prompt) => void }) {
+    const buildPromptImageLink = (item: Prompt) => {
+        const params = new URLSearchParams();
+        if (item.coverUrl) params.set("templateRef", item.coverUrl);
+        if (item.title) params.set("templateName", item.title);
+        if (item.prompt.trim()) params.set("prompt", item.prompt.trim());
+        return `/image?${params.toString()}`;
+    };
+
     return (
         <>
             <Modal title={prompt?.title} open={Boolean(prompt)} onCancel={onClose} footer={null} width={860}>
@@ -18,6 +26,11 @@ export function PromptDetailDialog({ prompt, onClose, onCopy, onSaveAsset }: { p
                             </div>
                             <div className="min-w-0">
                                 <div className="flex flex-wrap gap-1.5">
+                                    {prompt.isHot === 1 ? (
+                                        <Tag color="red" className="m-0">
+                                            热门
+                                        </Tag>
+                                    ) : null}
                                     {prompt.tags.map((tag) => (
                                         <Tag key={tag} className="m-0">
                                             {tag}
@@ -29,7 +42,10 @@ export function PromptDetailDialog({ prompt, onClose, onCopy, onSaveAsset }: { p
                                     创建：{formatPromptDate(prompt.createdAt)} · 更新：{formatPromptDate(prompt.updatedAt)}
                                 </div>
                                 <Space wrap className="mt-5">
-                                    <Button type="primary" icon={<Copy className="size-4" />} onClick={() => onCopy(prompt.prompt)}>
+                                    <Button type="primary" href={buildPromptImageLink(prompt)} icon={<Sparkles className="size-4" />}>
+                                        生成同款
+                                    </Button>
+                                    <Button icon={<Copy className="size-4" />} onClick={() => onCopy(prompt.prompt)}>
                                         复制提示词
                                     </Button>
                                     {onSaveAsset ? (

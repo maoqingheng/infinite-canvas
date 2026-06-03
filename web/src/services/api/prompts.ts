@@ -9,6 +9,7 @@ export type Prompt = {
     category: string;
     githubUrl: string;
     preview: string;
+    isHot: number;
     createdAt: string;
     updatedAt: string;
 };
@@ -22,13 +23,14 @@ export type PromptListResponse = {
     total: number;
 };
 
-export async function fetchPrompts({ keyword = "", tag = [], category = ALL_PROMPTS_OPTION, page, pageSize }: { keyword?: string; tag?: string[]; category?: string; page?: number; pageSize?: number } = {}) {
+export async function fetchPrompts({ keyword = "", tag = [], category = ALL_PROMPTS_OPTION, isHot, page, pageSize }: { keyword?: string; tag?: string[]; category?: string; isHot?: number; page?: number; pageSize?: number } = {}) {
     return apiGet<PromptListResponse>(
         "/api/prompts",
         compactApiParams({
             ...(keyword ? { keyword } : {}),
             ...(tag.length ? { tag } : {}),
             ...(category !== ALL_PROMPTS_OPTION ? { category } : {}),
+            ...(isHot ? { ishot: isHot } : {}),
             ...(page ? { page } : {}),
             ...(pageSize ? { pageSize } : {}),
         }),

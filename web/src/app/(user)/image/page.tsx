@@ -108,21 +108,28 @@ export default function ImagePage() {
     useEffect(() => {
         const styleRef = searchParams.get("styleRef");
         const styleName = searchParams.get("styleName");
-        if (!styleRef) return;
-        const initStyleRef = async () => {
+        const templateRef = searchParams.get("templateRef");
+        const templateName = searchParams.get("templateName");
+        const urlPrompt = searchParams.get("prompt")?.trim() || "";
+        const referenceUrl = styleRef || templateRef;
+        if (!referenceUrl) {
+            if (urlPrompt && !prompt.trim()) setPrompt(urlPrompt);
+            return;
+        }
+        const initUrlReference = async () => {
             try {
-                const proxyUrl = `/api/styles/image-proxy?url=${encodeURIComponent(styleRef)}`;
+                const proxyUrl = `/api/styles/image-proxy?url=${encodeURIComponent(referenceUrl)}`;
                 const image = await uploadImage(proxyUrl);
-                setReferences([{ id: nanoid(), name: styleName || "风格参考图", type: image.mimeType, dataUrl: image.url, storageKey: image.storageKey, locked: true }]);
+                setReferences([{ id: nanoid(), name: styleRef ? styleName || "风格参考图" : templateName || "图片模板", type: image.mimeType, dataUrl: image.url, storageKey: image.storageKey, locked: true }]);
                 if (!prompt.trim()) {
-                    setPrompt("按照图一的风格修改图二");
+                    setPrompt(styleRef ? (urlPrompt ? `参考图一风格或提示修改图二\n${urlPrompt}` : "参考图一风格或提示修改图二") : urlPrompt);
                 }
             } catch {
-                message.error("加载风格参考图失败");
+                message.error(styleRef ? "加载风格参考图失败" : "加载图片模板失败");
             }
         };
-        void initStyleRef();
-        // Only run once on mount when styleRef is present
+        void initUrlReference();
+        // Only run once on mount when URL reference params are present
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
