@@ -4,4 +4,5 @@ export type ReferenceImage = {
   type: string
   dataUrl: string
   storageKey?: string
+  locked?: boolean
 }

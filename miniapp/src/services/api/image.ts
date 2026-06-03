@@ -90,6 +90,17 @@ function withSystemPrompt(config: AiConfig, prompt: string) {
   return systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt
 }
 
+function imageReferenceLabel(index: number) {
+  return `图片${index + 1}`
+}
+
+function buildImageReferencePromptText(prompt: string, references: Array<unknown>) {
+  const text = prompt.trim()
+  if (!references.length) return text
+  const labels = references.map((_, index) => imageReferenceLabel(index))
+  return `参考图片编号：${labels.join('、')}。请按这些编号理解提示词中的图片引用。\n\n${text}`
+}
+
 function aiApiUrl(config: AiConfig, path: string) {
   return config.channelMode === 'remote'
     ? resolveUrl(`/api/v1${path}`)
@@ -106,6 +117,23 @@ function aiHeaders(config: AiConfig): Record<string, string> {
 function refreshRemoteUser(config: AiConfig) {
   if (config.channelMode === 'remote')
     void useUserStore.getState().hydrateUser()
+}
+
+async function resolveUploadFilePath(dataUrl: string) {
+  if (/^https?:\/\//i.test(dataUrl)) {
+    const response = await Taro.downloadFile({ url: dataUrl })
+    if (response.statusCode >= 400 || !response.tempFilePath) {
+      throw new Error('参考图下载失败')
+    }
+    return response.tempFilePath
+  }
+  if (dataUrl.startsWith('data:')) {
+    const [, content = ''] = dataUrl.split(',', 2)
+    const filePath = `${Taro.env.USER_DATA_PATH}/reference-${Date.now()}.png`
+    Taro.getFileSystemManager().writeFileSync(filePath, content, 'base64')
+    return filePath
+  }
+  return dataUrl
 }
 
 export async function requestGeneration(
@@ -142,21 +170,27 @@ export async function requestEdit(
 ) {
   const n = Math.max(1, Math.min(15, Math.floor(Math.abs(Number(config.count)) || 1)))
   const pixelSize = resolveSize(config.quality, config.size)
+  const requestPrompt = buildImageReferencePromptText(prompt, references)
   try {
-    const response = await Taro.request<ImageApiResponse>({
+    const filePath = await resolveUploadFilePath(references[0]?.dataUrl || '')
+    const response = await Taro.uploadFile({
       url: aiApiUrl(config, '/images/edits'),
-      method: 'POST',
-      header: { ...aiHeaders(config), 'Content-Type': 'application/json' },
-      data: {
+      filePath,
+      name: 'image',
+      header: aiHeaders(config),
+      formData: {
         model: config.model,
-        prompt: withSystemPrompt(config, prompt),
-        n,
+        prompt: withSystemPrompt(config, requestPrompt),
+        n: String(n),
         ...(pixelSize ? { quality: config.quality, size: pixelSize } : {}),
         response_format: 'b64_json',
-        image: references.map((ref) => ref.dataUrl),
       },
     })
-    const images = parseImagePayload(response.data)
+    const payload = JSON.parse(response.data || '{}') as ImageApiResponse
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw new Error(payload.msg || payload.error?.message || '请求失败')
+    }
+    const images = parseImagePayload(payload)
     refreshRemoteUser(config)
     return images
   } catch (error) {

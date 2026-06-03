@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { View, Text, Input, Image, ScrollView } from '@tarojs/components'
-import Taro from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import {
   useConfigStore,
   useEffectiveConfig,
@@ -11,6 +11,7 @@ import { requestGeneration, requestEdit } from '../../services/api/image'
 import { formatBytes, formatDuration } from '../../utils/format'
 import { cn } from '../../utils/cn'
 import { ConfigModal } from '../../components/config-modal'
+import { takeImageWorkbenchPayload } from '../../lib/image-workbench-payload'
 import type { ReferenceImage } from '../../types'
 import './index.scss'
 
@@ -71,6 +72,7 @@ export default function ImagePage() {
   const [running, setRunning] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
+  const [loadingUrlReference, setLoadingUrlReference] = useState(false)
   const [startedAt, setStartedAt] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [previewLog, setPreviewLog] = useState<GenerationLog | null>(null)
@@ -95,6 +97,36 @@ export default function ImagePage() {
   useEffect(() => {
     void refreshLogs()
   }, [])
+
+  useDidShow(() => {
+    const payload = takeImageWorkbenchPayload()
+    if (!payload) return
+    const isStylePayload = Boolean(payload.styleRef || payload.styleName)
+    const referenceUrl = payload.styleRef || payload.templateRef
+    if (isStylePayload) {
+      setPrompt(
+        payload.prompt?.trim()
+          ? `参考图一风格或提示修改图二\n${payload.prompt.trim()}`
+          : '参考图一风格或提示修改图二'
+      )
+    } else if (payload.prompt) {
+      setPrompt(payload.prompt)
+    }
+    if (referenceUrl) {
+      setLoadingUrlReference(true)
+      setReferences([
+        {
+          id: generateId(),
+          name: isStylePayload
+            ? payload.styleName || '风格参考图'
+            : payload.templateName || '图片模板',
+          type: 'image/*',
+          dataUrl: referenceUrl,
+          locked: true,
+        },
+      ])
+    }
+  })
 
   const refreshLogs = async () => {
     try {
@@ -131,6 +163,17 @@ export default function ImagePage() {
 
   const removeReference = (id: string) => {
     setReferences((v) => v.filter((r) => r.id !== id))
+  }
+
+  const updateGenerationCount = (value: string) => {
+    updateConfig('count', value.replace(/[^\d]/g, '').slice(0, 2))
+  }
+
+  const commitGenerationCount = (value: string) => {
+    updateConfig(
+      'count',
+      String(Math.max(1, Math.min(10, Number(value) || 1)))
+    )
   }
 
   const createSession = () => {
@@ -386,10 +429,20 @@ export default function ImagePage() {
                       className="reference-img"
                       src={ref.dataUrl}
                       mode="aspectFill"
+                      onLoad={() => setLoadingUrlReference(false)}
+                      onError={() => setLoadingUrlReference(false)}
                     />
+                    {ref.locked && loadingUrlReference && (
+                      <View className="reference-loading-overlay">
+                        <Text>加载参考图中...</Text>
+                      </View>
+                    )}
                     <View
                       className="reference-remove"
-                      onClick={() => removeReference(ref.id)}
+                      onClick={() => {
+                        removeReference(ref.id)
+                        if (ref.locked) setLoadingUrlReference(false)
+                      }}
                     >
                       <Text>✕</Text>
                     </View>
@@ -402,6 +455,11 @@ export default function ImagePage() {
                 )}
               </View>
             </ScrollView>
+            {!loadingUrlReference && references.some((ref) => ref.locked) && (
+              <Text className="reference-tip">
+                参考图已加载，请继续上传需要修改的图片作为第二张参考图
+              </Text>
+            )}
           </View>
 
           {/* Parameters Summary (mobile) */}
@@ -490,13 +548,10 @@ export default function ImagePage() {
                 <Input
                   className="setting-input"
                   type="number"
-                  value={config.count}
-                  onInput={(e) =>
-                    updateConfig(
-                      'count',
-                      String(Math.max(1, Math.min(10, Number(e.detail.value) || 1)))
-                    )
-                  }
+                  value={config.count || ''}
+                  onInput={(e) => updateGenerationCount(e.detail.value)}
+                  onBlur={(e) => commitGenerationCount(e.detail.value)}
+                  onConfirm={(e) => commitGenerationCount(e.detail.value)}
                 />
               </View>
               <View className="setting-item">
@@ -689,9 +744,6 @@ export default function ImagePage() {
 
       {/* AI Config Modal */}
       <ConfigModal />
-      <View className="back-home" onClick={() => Taro.navigateTo({ url: '/pages/index/index' })}>
-        <Text>←</Text>
-      </View>
     </View>
   )
 }

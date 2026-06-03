@@ -1,0 +1,91 @@
+.profile-page {
+  min-height: 100vh;
+  padding: 48px 32px 32px;
+  background-color: #0c0a09;
+  background-image: radial-gradient(rgba(245, 245, 244, 0.18) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.profile-card {
+  padding: 36px;
+  border-radius: 24px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-title {
+  display: block;
+  font-size: 48px;
+  font-weight: 600;
+  color: #fafaf9;
+}
+
+.profile-subtitle {
+  display: block;
+  margin-top: 14px;
+  font-size: 26px;
+  line-height: 1.6;
+  color: #a8a29e;
+}
+
+.user-box {
+  margin-top: 30px;
+  padding: 24px;
+  border-radius: 18px;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.user-name {
+  display: block;
+  font-size: 32px;
+  font-weight: 600;
+  color: #fafaf9;
+}
+
+.user-desc {
+  display: block;
+  margin-top: 8px;
+  font-size: 24px;
+  color: #78716c;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.profile-entry {
+  min-height: 160px;
+  padding: 26px;
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.entry-title {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  color: #fafaf9;
+}
+
+.entry-desc {
+  display: block;
+  margin-top: 12px;
+  font-size: 23px;
+  line-height: 1.5;
+  color: #78716c;
+}
+
+.danger-zone {
+  margin-top: 28px;
+  padding: 24px;
+  text-align: center;
+  color: #fca5a5;
+  font-size: 26px;
+  border-radius: 18px;
+  background-color: rgba(127, 29, 29, 0.22);
+  border: 2px solid rgba(248, 113, 113, 0.24);
+}

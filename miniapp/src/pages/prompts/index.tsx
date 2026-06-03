@@ -8,6 +8,7 @@ import {
   ALL_PROMPTS_OPTION,
   type Prompt,
 } from '../../services/api/prompts'
+import { setImageWorkbenchPayload } from '../../lib/image-workbench-payload'
 import { cn } from '../../utils/cn'
 import './index.scss'
 
@@ -16,6 +17,8 @@ export default function PromptsPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] =
     useState(ALL_PROMPTS_OPTION)
+  const [hotOnly, setHotOnly] = useState(false)
+  const [tagsExpanded, setTagsExpanded] = useState(false)
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null)
   const addAsset = useAssetStore((state) => state.addAsset)
   const copyText = useCopyText()
@@ -24,12 +27,12 @@ export default function PromptsPage() {
     query,
     items: promptItems,
     tags: promptTags,
-    categories: promptCategoryOptions,
     total: totalPrompts,
   } = usePromptList({
     keyword,
     tags: selectedTags,
     category: selectedCategory,
+    isHot: hotOnly ? 1 : undefined,
   })
 
   useEffect(() => {
@@ -68,6 +71,17 @@ export default function PromptsPage() {
     Taro.showToast({ title: '已加入我的素材', icon: 'success' })
   }
 
+  const generateLikePrompt = (item: Prompt) => {
+    setImageWorkbenchPayload({
+      templateRef: item.coverUrl,
+      templateName: item.title,
+      prompt: item.prompt.trim()
+        ? `参考图一风格或提示生成图二\n${item.prompt.trim()}`
+        : '',
+    })
+    Taro.switchTab({ url: '/pages/image/index' })
+  }
+
   const handleScrollToLower = () => {
     if (query.hasNextPage && !query.isFetchingNextPage) {
       void query.fetchNextPage()
@@ -77,25 +91,38 @@ export default function PromptsPage() {
   const renderFilterTags = (
     items: string[],
     selected: string | string[],
-    onChange: (item: string) => void
+    onChange: (item: string) => void,
+    collapsed = false
   ) => (
-    <View className="filter-tags">
-      {items.map((item) => {
-        const isSelected = Array.isArray(selected)
-          ? selected.length === 0
-            ? item === ALL_PROMPTS_OPTION
-            : selected.includes(item)
-          : selected === item
-        return (
-          <View
-            key={item}
-            className={cn('filter-tag', isSelected && 'filter-tag-active')}
-            onClick={() => onChange(item)}
-          >
-            <Text>{item}</Text>
-          </View>
-        )
-      })}
+    <View className="filter-tag-stack">
+      <View className="filter-tags">
+        {(collapsed && !tagsExpanded ? items.slice(0, 8) : items).map((item) => {
+          const isSelected = Array.isArray(selected)
+            ? selected.length === 0
+              ? item === ALL_PROMPTS_OPTION
+              : selected.includes(item)
+            : selected === item
+          return (
+            <View
+              key={item}
+              className={cn('filter-tag', isSelected && 'filter-tag-active')}
+              onClick={() => onChange(item)}
+            >
+              <Text>{item}</Text>
+            </View>
+          )
+        })}
+      </View>
+      {collapsed && items.length > 8 ? (
+        <View
+          className="filter-more"
+          onClick={() => setTagsExpanded((value) => !value)}
+        >
+          <Text>
+            {tagsExpanded ? '收起标签' : `展开全部 ${items.length} 个标签`}
+          </Text>
+        </View>
+      ) : null}
     </View>
   )
 
@@ -120,14 +147,19 @@ export default function PromptsPage() {
       {!query.isLoading && (
         <View className="filter-section">
           <View className="filter-row">
-            <Text className="filter-label">分类</Text>
-            {renderFilterTags(promptCategoryOptions, selectedCategory, (cat) =>
-              setSelectedCategory(cat)
-            )}
+            <Text className="filter-label">热门</Text>
+            <View className="filter-tags">
+              <View
+                className={cn('filter-tag', hotOnly && 'filter-tag-active')}
+                onClick={() => setHotOnly((value) => !value)}
+              >
+                <Text>只看热门</Text>
+              </View>
+            </View>
           </View>
           <View className="filter-row">
             <Text className="filter-label">标签</Text>
-            {renderFilterTags(promptTags, selectedTags, toggleTag)}
+            {renderFilterTags(promptTags, selectedTags, toggleTag, true)}
           </View>
         </View>
       )}
@@ -140,39 +172,40 @@ export default function PromptsPage() {
         <View className="prompt-list-wrap">
           <ScrollView
             className="prompt-list-scroll"
-          scrollY
-          onScrollToLower={handleScrollToLower}
-        >
-          <View className="prompt-grid">
-            {promptItems.map((item) => (
-              <PromptCardView
-                key={item.id}
-                item={item}
-                onOpen={() => setSelectedPrompt(item)}
-                onCopy={() => copyText(item.prompt, '提示词已复制')}
-                onSaveAsset={() => savePromptAsset(item)}
-              />
-            ))}
-          </View>
-
-          {promptItems.length === 0 && (
-            <View className="empty-wrap">
-              <Text className="empty-text">没有找到匹配的提示词</Text>
+            scrollY
+            onScrollToLower={handleScrollToLower}
+          >
+            <View className="prompt-grid">
+              {promptItems.map((item) => (
+                <PromptCardView
+                  key={item.id}
+                  item={item}
+                  onOpen={() => setSelectedPrompt(item)}
+                  onCopy={() => copyText(item.prompt, '提示词已复制')}
+                  onSaveAsset={() => savePromptAsset(item)}
+                  onGenerateLike={() => generateLikePrompt(item)}
+                />
+              ))}
             </View>
-          )}
 
-          <View className="load-more-hint">
-            <Text className="hint-text">
-              {query.isFetchingNextPage
-                ? '加载中...'
-                : query.hasNextPage
-                  ? '继续向下滚动加载更多'
-                  : promptItems.length > 0
-                    ? '已经到底了'
-                    : ''}
-            </Text>
-          </View>
-        </ScrollView>
+            {promptItems.length === 0 && (
+              <View className="empty-wrap">
+                <Text className="empty-text">没有找到匹配的提示词</Text>
+              </View>
+            )}
+
+            <View className="load-more-hint">
+              <Text className="hint-text">
+                {query.isFetchingNextPage
+                  ? '加载中...'
+                  : query.hasNextPage
+                    ? '继续向下滚动加载更多'
+                    : promptItems.length > 0
+                      ? '已经到底了'
+                      : ''}
+              </Text>
+            </View>
+          </ScrollView>
         </View>
       )}
 
@@ -182,11 +215,9 @@ export default function PromptsPage() {
           onClose={() => setSelectedPrompt(null)}
           onCopy={(p) => copyText(p, '提示词已复制')}
           onSaveAsset={savePromptAsset}
+          onGenerateLike={generateLikePrompt}
         />
       )}
-      <View className="back-home" onClick={() => Taro.navigateTo({ url: '/pages/index/index' })}>
-        <Text>←</Text>
-      </View>
     </View>
   )
 }
@@ -196,11 +227,13 @@ function PromptCardView({
   onOpen,
   onCopy,
   onSaveAsset,
+  onGenerateLike,
 }: {
   item: Prompt
   onOpen: () => void
   onCopy: () => void
   onSaveAsset: () => void
+  onGenerateLike: () => void
 }) {
   return (
     <View className="prompt-card" onClick={onOpen}>
@@ -229,6 +262,9 @@ function PromptCardView({
           </View>
         </View>
         <View className="prompt-card-actions">
+          <View className="card-action primary" onClick={(e) => { e.stopPropagation(); onGenerateLike() }}>
+            <Text>生成同款</Text>
+          </View>
           <View className="card-action" onClick={(e) => { e.stopPropagation(); onCopy() }}>
             <Text>复制</Text>
           </View>
@@ -246,11 +282,13 @@ function PromptDetailPopup({
   onClose,
   onCopy,
   onSaveAsset,
+  onGenerateLike,
 }: {
   prompt: Prompt
   onClose: () => void
   onCopy: (p: string) => void
   onSaveAsset: (item: Prompt) => void
+  onGenerateLike: (item: Prompt) => void
 }) {
   return (
     <View className="popup-mask" onClick={onClose}>
@@ -289,10 +327,13 @@ function PromptDetailPopup({
         </View>
 
         <View className="popup-actions">
+          <View className="popup-btn primary" onClick={() => onGenerateLike(prompt)}>
+            <Text>生成同款</Text>
+          </View>
           <View className="popup-btn" onClick={() => onCopy(prompt.prompt)}>
             <Text>复制提示词</Text>
           </View>
-          <View className="popup-btn primary" onClick={() => onSaveAsset(prompt)}>
+          <View className="popup-btn" onClick={() => onSaveAsset(prompt)}>
             <Text>加入我的素材</Text>
           </View>
         </View>

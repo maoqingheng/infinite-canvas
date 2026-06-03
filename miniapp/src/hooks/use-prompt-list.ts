@@ -12,20 +12,23 @@ export function usePromptList({
   keyword,
   tags,
   category,
+  isHot,
   enabled = true,
 }: {
   keyword: string
   tags: string[]
   category: string
+  isHot?: number
   enabled?: boolean
 }) {
   const query = useInfiniteQuery({
-    queryKey: ['prompts', keyword, tags, category],
+    queryKey: ['prompts', keyword, tags, category, isHot],
     queryFn: ({ pageParam }) =>
       fetchPrompts({
         keyword,
         tag: tags,
         category,
+        isHot,
         page: pageParam as number,
         pageSize: PROMPT_PAGE_SIZE,
       }),
