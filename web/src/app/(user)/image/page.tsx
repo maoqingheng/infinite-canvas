@@ -409,16 +409,18 @@ export default function ImagePage() {
                                         <div key={item.id} className="group relative size-20 shrink-0 overflow-hidden rounded-md border border-stone-200 dark:border-stone-800">
                                             <img src={item.dataUrl} alt={item.name} className="size-full object-cover" />
                                             {item.locked ? null : (
-                                                <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">{imageReferenceLabel(index)}</span>
-                                            <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
-                                            <button
-                                                    type="button"
-                                                    className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex"
-                                                    onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
-                                                    aria-label="移除参考图"
-                                                >
-                                                    <Trash2 className="size-3.5" />
-                                                </button>
+                                                <>
+                                                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">{imageReferenceLabel(index)}</span>
+                                                    <ReferenceOrderButtons index={index} total={references.length} onMove={(offset) => setReferences((value) => moveListItem(value, index, offset))} />
+                                                    <button
+                                                        type="button"
+                                                        className="absolute right-1 top-1 hidden size-6 items-center justify-center rounded bg-black/60 text-white group-hover:flex"
+                                                        onClick={() => setReferences((value) => value.filter((ref) => ref.id !== item.id))}
+                                                        aria-label="移除参考图"
+                                                    >
+                                                        <Trash2 className="size-3.5" />
+                                                    </button>
+                                                </>
                                             )}
                                             {item.locked ? (
                                                 <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1 py-0.5 text-center text-[10px] text-white">风格参考</div>
