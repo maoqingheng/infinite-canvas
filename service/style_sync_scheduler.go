@@ -9,7 +9,7 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-const defaultStyleSyncCron = "*/1 * * * *"
+const defaultStyleSyncCron = "*/10 * * * *"
 
 var (
 	styleSyncCron *cron.Cron
