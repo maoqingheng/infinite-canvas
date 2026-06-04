@@ -47,6 +47,7 @@ func SyncStyles() error {
 		return err
 	}
 	categories = filterStyleCategories(categories)
+	categories = localizeStyleImages(categories)
 	now := time.Now().Format(time.RFC3339)
 
 	styleItems := make([]model.Style, 0, len(categories))
@@ -130,6 +131,23 @@ func isExcludedStyleName(name string) bool {
 		}
 	}
 	return false
+}
+
+func localizeStyleImages(categories []styleAPICategory) []styleAPICategory {
+	client := http.Client{Timeout: 30 * time.Second}
+	for categoryIndex := range categories {
+		for detailIndex := range categories[categoryIndex].ActiveStyles {
+			detail := &categories[categoryIndex].ActiveStyles[detailIndex]
+			localURL, err := cacheStyleImage(&client, detail.Logo, detail.ID)
+			if err != nil {
+				log.Printf("cache style image failed id=%d url=%s err=%v", detail.ID, detail.Logo, err)
+				detail.Logo = ""
+				continue
+			}
+			detail.Logo = localURL
+		}
+	}
+	return categories
 }
 
 func fetchStyles() ([]styleAPICategory, error) {

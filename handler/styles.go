@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -47,6 +48,30 @@ func AdminSyncStyles(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("sync styles done")
 	OK(w, true)
+}
+
+func StyleImage(w http.ResponseWriter, r *http.Request, id string) {
+	path, ok := service.StyleImagePath(id)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil || info.IsDir() {
+		http.NotFound(w, r)
+		return
+	}
+	if mimeType := service.StyleImageMimeType(id); mimeType != "" {
+		w.Header().Set("Content-Type", mimeType)
+	}
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	http.ServeContent(w, r, id, info.ModTime(), file)
 }
 
 func StyleImageProxy(w http.ResponseWriter, r *http.Request) {

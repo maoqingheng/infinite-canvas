@@ -4,6 +4,8 @@ services:
     container_name: infinite-canvas
     env_file:
       - .env
+    environment:
+      PUBLIC_BASE_URL: https://genpic.yoota.top
     volumes:
       - ./data:/app/data
     ports:

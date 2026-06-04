@@ -16,6 +16,8 @@ services:
         value: 168
       - key: PORT
         value: 3000
+      - key: PUBLIC_BASE_URL
+        value: https://genpic.yoota.top
       - key: STORAGE_DRIVER
         value: sqlite
       - key: DATABASE_DSN

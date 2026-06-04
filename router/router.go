@@ -42,6 +42,12 @@ func New() *gin.Engine {
 	api.HEAD("/media/references/:id", func(c *gin.Context) {
 		handler.ReferenceMedia(c.Writer, c.Request, c.Param("id"))
 	})
+	api.GET("/media/styles/:id", func(c *gin.Context) {
+		handler.StyleImage(c.Writer, c.Request, c.Param("id"))
+	})
+	api.HEAD("/media/styles/:id", func(c *gin.Context) {
+		handler.StyleImage(c.Writer, c.Request, c.Param("id"))
+	})
 	v1 := api.Group("/v1", middleware.UserAuth)
 	v1.POST("/images/generations", gin.WrapF(handler.AIImagesGenerations))
 	v1.POST("/images/edits", gin.WrapF(handler.AIImagesEdits))
