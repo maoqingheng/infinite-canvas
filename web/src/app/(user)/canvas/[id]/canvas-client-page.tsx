@@ -19,7 +19,7 @@ import { canvasThemes, type CanvasBackgroundMode } from "@/lib/canvas-theme";
 import { UserStatusActions } from "@/components/layout/user-status-actions";
 import { useAssetStore } from "@/stores/use-asset-store";
 import { useThemeStore } from "@/stores/use-theme-store";
-import { cropDataUrl } from "../utils/canvas-image-data";
+import { cropDataUrl, upscaleDataUrl } from "../utils/canvas-image-data";
 import { fitNodeSize, nodeSizeFromRatio } from "../utils/canvas-node-size";
 import { App, Button, Dropdown, Modal } from "antd";
 import { NODE_DEFAULT_SIZE, getNodeSpec } from "../constants";
@@ -29,6 +29,7 @@ import { CanvasAssistantPanel } from "../components/canvas-assistant-panel";
 import { CanvasNodeContextMenu } from "../components/canvas-context-menu";
 import { CanvasNodeAngleDialog, type CanvasImageAngleParams } from "../components/canvas-node-angle-dialog";
 import { CanvasNodeCropDialog, type CanvasImageCropRect } from "../components/canvas-node-crop-dialog";
+import { CanvasNodeUpscaleDialog, type CanvasImageUpscaleParams } from "../components/canvas-node-upscale-dialog";
 import { buildNodeChatMessages, buildNodeGenerationContext, buildNodeGenerationInputs, hydrateNodeGenerationContext, type NodeGenerationInput } from "../components/canvas-node-generation";
 import { CanvasNodeHoverToolbar, CanvasNodeInfoModal } from "../components/canvas-node-hover-toolbar";
 import { InfiniteCanvas } from "../components/infinite-canvas";
@@ -39,6 +40,7 @@ import { CanvasToolbar } from "../components/canvas-toolbar";
 import { AssetPickerModal, type AssetPickerTab, type InsertAssetPayload } from "../components/asset-picker-modal";
 import { CanvasZoomControls } from "../components/canvas-zoom-controls";
 import { useCanvasStore } from "../stores/use-canvas-store";
+import { buildCanvasResourceReferences, buildInputMentionReferences, buildNodeMentionReferences } from "../utils/canvas-resource-references";
 import {
     CanvasNodeType,
     type CanvasAssistantImage,
@@ -271,6 +273,8 @@ function InfiniteCanvasPage() {
     const [editRequestNonce, setEditRequestNonce] = useState(0);
     const [infoNodeId, setInfoNodeId] = useState<string | null>(null);
     const [cropNodeId, setCropNodeId] = useState<string | null>(null);
+    const [upscaleNodeId, setUpscaleNodeId] = useState<string | null>(null);
+    const [superResolveNodeId, setSuperResolveNodeId] = useState<string | null>(null);
     const [angleNodeId, setAngleNodeId] = useState<string | null>(null);
     const [previewNodeId, setPreviewNodeId] = useState<string | null>(null);
     const [assistantCollapsed, setAssistantCollapsed] = useState(true);
@@ -525,7 +529,8 @@ function InfiniteCanvasPage() {
             const padding = CONNECTION_NODE_HIT_PADDING / scale;
             const handleRadius = CONNECTION_HANDLE_HIT_RADIUS / scale;
             let isNearNode = false;
-            let best: { nodeId: string; priority: number } | null = null;
+            let bestNodeId: string | null = null;
+            let bestPriority = Number.POSITIVE_INFINITY;
 
             [...nodesRef.current]
                 .filter((node) => !isHiddenBatchChild(node, nodesRef.current))
@@ -543,10 +548,13 @@ function InfiniteCanvasPage() {
                     if (node.id === current.nodeId || !normalizeConnection(current.nodeId, node.id, nodesRef.current, current.handleType)) return;
 
                     const priority = hitsInside ? 0 : hitsHandle ? 1 : 2;
-                    if (!best || priority < best.priority) best = { nodeId: node.id, priority };
+                    if (priority < bestPriority) {
+                        bestNodeId = node.id;
+                        bestPriority = priority;
+                    }
                 });
 
-            return { nodeId: best?.nodeId || null, isNearNode };
+            return { nodeId: bestNodeId, isNearNode };
         },
         [screenToCanvas],
     );
@@ -568,6 +576,8 @@ function InfiniteCanvasPage() {
     const toolbarNode = toolbarNodeId ? nodeById.get(toolbarNodeId) || null : null;
     const infoNode = infoNodeId ? nodeById.get(infoNodeId) || null : null;
     const cropNode = cropNodeId ? nodeById.get(cropNodeId) || null : null;
+    const upscaleNode = upscaleNodeId ? nodeById.get(upscaleNodeId) || null : null;
+    const superResolveNode = superResolveNodeId ? nodeById.get(superResolveNodeId) || null : null;
     const angleNode = angleNodeId ? nodeById.get(angleNodeId) || null : null;
     const previewNode = previewNodeId ? nodeById.get(previewNodeId) || null : null;
     const hasMultipleSelectedNodes = selectedNodeIds.size > 1;
@@ -617,6 +627,19 @@ function InfiniteCanvasPage() {
         });
         return map;
     }, [connections, nodes]);
+    const resourceContextNodeId = dialogNodeId || activeNodeId;
+    const canvasResourceReferences = useMemo(() => buildCanvasResourceReferences(nodes, connections, resourceContextNodeId), [connections, nodes, resourceContextNodeId]);
+    const resourceReferenceByNodeId = useMemo(() => new Map(canvasResourceReferences.map((reference) => [reference.nodeId, reference])), [canvasResourceReferences]);
+    const mentionReferencesByNodeId = useMemo(() => {
+        const map = new Map<string, ReturnType<typeof buildNodeMentionReferences>>();
+        nodes.forEach((node) => map.set(node.id, buildNodeMentionReferences(node, nodes, connections)));
+        return map;
+    }, [connections, nodes]);
+    const configMentionReferencesById = useMemo(() => {
+        const map = new Map<string, ReturnType<typeof buildInputMentionReferences>>();
+        configInputsById.forEach((inputs, nodeId) => map.set(nodeId, buildInputMentionReferences(inputs)));
+        return map;
+    }, [configInputsById]);
 
     const createNode = useCallback(
         (type: CanvasNodeType, position?: Position) => {
@@ -1441,6 +1464,31 @@ function InfiniteCanvasPage() {
         setCropNodeId(null);
     }, []);
 
+    const upscaleImageNode = useCallback(async (node: CanvasNodeData, params: CanvasImageUpscaleParams) => {
+        if (!node.metadata?.content) return;
+        setUpscaleNodeId(null);
+        const upscaled = await upscaleDataUrl(node.metadata.content, params);
+        const image = await uploadImage(upscaled);
+        const size = fitNodeSize(image.width, image.height);
+        const childId = nanoid();
+        const child: CanvasNodeData = {
+            id: childId,
+            type: CanvasNodeType.Image,
+            title: "Upscaled Image",
+            position: { x: node.position.x + node.width + 96, y: node.position.y },
+            width: size.width,
+            height: size.height,
+            metadata: {
+                ...imageMetadata(image),
+                prompt: node.metadata?.prompt,
+            },
+        };
+        setNodes((prev) => [...prev, child]);
+        setConnections((prev) => [...prev, { id: nanoid(), fromNodeId: node.id, toNodeId: childId }]);
+        setSelectedNodeIds(new Set([childId]));
+        setDialogNodeId(childId);
+    }, []);
+
     const generateAngleNode = useCallback(
         async (node: CanvasNodeData, params: CanvasImageAngleParams) => {
             if (!node.metadata?.content) return;
@@ -2190,10 +2238,13 @@ function InfiniteCanvasPage() {
                             batchRecovering={collapsingBatchIds.has(node.id)}
                             batchMotion={batchMotionById.get(node.id)}
                             showImageInfo={showImageInfo}
+                            resourceLabel={resourceReferenceByNodeId.get(node.id)}
+                            mentionReferences={mentionReferencesByNodeId.get(node.id) || []}
                             renderPanel={(panelNode) => (
                                 <CanvasNodePromptPanel
                                     node={panelNode}
                                     isRunning={runningNodeId === panelNode.id}
+                                    mentionReferences={mentionReferencesByNodeId.get(panelNode.id) || []}
                                     onPromptChange={handleNodePromptChange}
                                     onConfigChange={handleConfigNodeChange}
                                     onGenerate={handleGenerateNode}
@@ -2209,6 +2260,7 @@ function InfiniteCanvasPage() {
                                     isRunning={runningNodeId === contentNode.id}
                                     inputSummary={getInputSummary(configInputsById.get(contentNode.id) || [])}
                                     inputs={configInputsById.get(contentNode.id) || []}
+                                    mentionReferences={configMentionReferencesById.get(contentNode.id) || []}
                                     onConfigChange={handleConfigNodeChange}
                                     onTextInputChange={handleNodeContentChange}
                                     onGenerate={(nodeId) => {
@@ -2273,6 +2325,8 @@ function InfiniteCanvasPage() {
                     onDownload={downloadNodeImage}
                     onSaveAsset={(node) => void saveNodeAsset(node)}
                     onCrop={(node) => setCropNodeId(node.id)}
+                    onUpscale={(node) => setUpscaleNodeId(node.id)}
+                    onSuperResolve={(node) => setSuperResolveNodeId(node.id)}
                     onAngle={(node) => setAngleNodeId(node.id)}
                     onViewImage={(node) => setPreviewNodeId(node.id)}
                     onRetry={(node) => void handleRetryNode(node)}
@@ -2338,6 +2392,12 @@ function InfiniteCanvasPage() {
                 <CanvasNodeInfoModal node={infoNode} open={Boolean(infoNode)} onClose={() => setInfoNodeId(null)} />
 
                 {cropNode?.metadata?.content ? <CanvasNodeCropDialog dataUrl={cropNode.metadata.content} open={Boolean(cropNode)} onClose={() => setCropNodeId(null)} onConfirm={(crop) => void cropImageNode(cropNode!, crop)} /> : null}
+
+                {upscaleNode?.metadata?.content ? <CanvasNodeUpscaleDialog dataUrl={upscaleNode.metadata.content} open={Boolean(upscaleNode)} onClose={() => setUpscaleNodeId(null)} onConfirm={(params) => void upscaleImageNode(upscaleNode!, params)} /> : null}
+
+                <Modal title="AI 超分" open={Boolean(superResolveNode?.metadata?.content)} centered footer={null} onCancel={() => setSuperResolveNodeId(null)}>
+                    <div className="py-8 text-center text-base font-medium">暂未实现</div>
+                </Modal>
 
                 {angleNode?.metadata?.content ? <CanvasNodeAngleDialog dataUrl={angleNode.metadata.content} open={Boolean(angleNode)} onClose={() => setAngleNodeId(null)} onConfirm={(params) => void generateAngleNode(angleNode!, params)} /> : null}
 
