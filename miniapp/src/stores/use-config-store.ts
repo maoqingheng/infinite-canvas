@@ -41,7 +41,7 @@ export type AiConfig = {
 export const CONFIG_STORE_KEY = 'infinite-canvas:ai_config_store'
 
 export const defaultConfig: AiConfig = {
-  channelMode: 'local',
+  channelMode: 'remote',
   baseUrl: 'https://api.openai.com',
   apiKey: '',
   model: 'gpt-image-2',
@@ -54,7 +54,7 @@ export const defaultConfig: AiConfig = {
   models: [],
   quality: 'auto',
   size: '1:1',
-  count: '1',
+  count: '3',
 }
 
 type ConfigStore = {
@@ -126,9 +126,16 @@ export const useConfigStore = create<ConfigStore>()(
         if (get().isPublicSettingsLoading) return
         set({ isPublicSettingsLoading: true })
         try {
-          set({
-            publicSettings: await apiGet<AdminPublicSettings>('/api/settings'),
-          })
+          const publicSettings = await apiGet<AdminPublicSettings>('/api/settings')
+          set((state) => ({
+            publicSettings,
+            config:
+              publicSettings.modelChannel?.availableModels?.length &&
+              state.config.channelMode === 'local' &&
+              !state.config.apiKey.trim()
+                ? { ...state.config, channelMode: 'remote' }
+                : state.config,
+          }))
         } finally {
           set({ isPublicSettingsLoading: false })
         }

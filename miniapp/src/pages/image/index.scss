@@ -229,6 +229,15 @@
   border-radius: 8px;
 }
 
+.retry-all-btn {
+  padding: 8px 18px;
+  font-size: 22px;
+  font-weight: 500;
+  color: #0c0a09;
+  background-color: #fafaf9;
+  border-radius: 10px;
+}
+
 .results-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -303,6 +312,12 @@
   background-color: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
+
+  &.retry {
+    color: #0c0a09;
+    background-color: #fafaf9;
+    border-color: #fafaf9;
+  }
 }
 
 .failed-content {
@@ -325,10 +340,11 @@
   font-size: 22px;
   color: #f87171;
   text-align: center;
+  word-break: break-all;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
 }
 

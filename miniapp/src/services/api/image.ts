@@ -85,10 +85,35 @@ function readRequestError(error: unknown, fallback: string) {
   return fallback
 }
 
+function compactText(value: string) {
+  return value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
 function parseResponsePayload(data: ImageApiResponse | string) {
   return typeof data === 'string'
     ? (JSON.parse(data || '{}') as ImageApiResponse)
     : data
+}
+
+function responseErrorMessage(
+  response: { statusCode?: number; data?: ImageApiResponse | string },
+  fallback = '请求失败'
+) {
+  let payload: ImageApiResponse | null = null
+  try {
+    payload =
+      response.data === undefined ? null : parseResponsePayload(response.data)
+  } catch {
+    const text =
+      typeof response.data === 'string' ? compactText(response.data) : ''
+    if (response.statusCode === 504 || /gateway time-out/i.test(text)) {
+      return '网关超时 504：AI 服务响应时间过长，请稍后重试或减少生成张数'
+    }
+    return text ? text.slice(0, 300) : fallback
+  }
+  if (payload?.msg) return payload.msg
+  if (payload?.error?.message) return payload.error.message
+  return response.statusCode ? `${fallback}：${response.statusCode}` : fallback
 }
 
 function withSystemPrompt(config: AiConfig, prompt: string) {
@@ -234,6 +259,9 @@ export async function requestGeneration(
         response_format: 'b64_json',
       },
     })
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw new Error(responseErrorMessage(response))
+    }
     const images = parseImagePayload(response.data)
     refreshRemoteUser(config)
     return images
@@ -269,10 +297,10 @@ export async function requestEdit(
       data: body,
       timeout: 180000,
     })
-    const payload = parseResponsePayload(response.data)
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw new Error(payload.msg || payload.error?.message || '请求失败')
+      throw new Error(responseErrorMessage(response))
     }
+    const payload = parseResponsePayload(response.data)
     const images = parseImagePayload(payload)
     refreshRemoteUser(config)
     return images

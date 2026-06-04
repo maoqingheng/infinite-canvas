@@ -70,6 +70,7 @@ export default function ImagePage() {
   const [results, setResults] = useState<GenerationResult[]>([])
   const [logs, setLogs] = useState<GenerationLog[]>([])
   const [running, setRunning] = useState(false)
+  const [retrying, setRetrying] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showLogs, setShowLogs] = useState(false)
   const [loadingUrlReference, setLoadingUrlReference] = useState(false)
@@ -85,6 +86,7 @@ export default function ImagePage() {
     1,
     Math.min(10, Number(config.count) || 1)
   )
+  const failedResultCount = results.filter((item) => item.status === 'failed').length
 
   // Timer
   useEffect(() => {
@@ -236,6 +238,19 @@ export default function ImagePage() {
     } catch (error) {
       const errMsg =
         error instanceof Error ? error.message : '生成失败'
+      console.error(`第 ${index + 1} 张生成失败`, {
+        error,
+        message: errMsg,
+        model: snapshot.config.model,
+        references: snapshot.references.map((item, refIndex) => ({
+          index: refIndex + 1,
+          name: item.name,
+          type: item.type,
+          locked: item.locked,
+          source: item.dataUrl.startsWith('http') ? 'remote' : item.dataUrl.startsWith('data:') ? 'base64' : 'local',
+        })),
+        prompt: snapshot.text,
+      })
       setResults((v) =>
         v.map((item, i) =>
           i === index
@@ -244,6 +259,62 @@ export default function ImagePage() {
         )
       )
       throw error
+    }
+  }
+
+  const retryResult = async (index: number) => {
+    if (running || retrying) return
+    const snapshot = buildRequestSnapshot()
+    if (!snapshot) return
+    setRetrying(true)
+    setResults((v) =>
+      v.map((item, i) =>
+        i === index
+          ? { id: item.id || generateId(), status: 'pending' }
+          : item
+      )
+    )
+    try {
+      await runGenerationSlot(index, snapshot)
+      Taro.showToast({ title: '重试成功', icon: 'success' })
+    } catch (error) {
+      Taro.showToast({
+        title: error instanceof Error ? error.message : '重试失败',
+        icon: 'none',
+      })
+    } finally {
+      setRetrying(false)
+    }
+  }
+
+  const retryFailedResults = async () => {
+    if (running || retrying) return
+    const failedIndexes = results
+      .map((item, index) => (item.status === 'failed' ? index : -1))
+      .filter((index) => index >= 0)
+    if (!failedIndexes.length) return
+    const snapshot = buildRequestSnapshot()
+    if (!snapshot) return
+    setRetrying(true)
+    setResults((v) =>
+      v.map((item, index) =>
+        failedIndexes.includes(index)
+          ? { id: item.id || generateId(), status: 'pending' }
+          : item
+      )
+    )
+    try {
+      const settled = await Promise.allSettled(
+        failedIndexes.map((index) => runGenerationSlot(index, snapshot))
+      )
+      const successCount = settled.filter((item) => item.status === 'fulfilled').length
+      const failCount = settled.length - successCount
+      Taro.showToast({
+        title: failCount ? `重试成功 ${successCount} 张，失败 ${failCount} 张` : '全部重试成功',
+        icon: successCount ? 'success' : 'none',
+      })
+    } finally {
+      setRetrying(false)
     }
   }
 
@@ -267,47 +338,49 @@ export default function ImagePage() {
       runGenerationSlot(i, snapshot)
     )
 
-    const settled = await Promise.allSettled(tasks)
-    const successImages = settled
-      .filter((s): s is PromiseFulfilledResult<GeneratedImage> => s.status === 'fulfilled')
-      .map((s) => s.value)
-    const successCount = successImages.length
-    const failCount = generationCount - successCount
+    try {
+      const settled = await Promise.allSettled(tasks)
+      const successImages = settled
+        .filter((s): s is PromiseFulfilledResult<GeneratedImage> => s.status === 'fulfilled')
+        .map((s) => s.value)
+      const successCount = successImages.length
+      const failCount = generationCount - successCount
 
-    const log: GenerationLog = {
-      id: generateId(),
-      createdAt: Date.now(),
-      title: prompt.trim().slice(0, 12) || '未命名',
-      time: new Date().toLocaleString('zh-CN', { hour12: false }),
-      model,
-      durationMs: Date.now() - batchStartedAt,
-      successCount,
-      failCount,
-      imageCount: generationCount,
-      size: effectiveConfig.size,
-      quality: effectiveConfig.quality,
-      status: successCount > 0 ? '成功' : '失败',
-      thumbnails: successImages.map((img) => img.dataUrl),
+      const log: GenerationLog = {
+        id: generateId(),
+        createdAt: Date.now(),
+        title: prompt.trim().slice(0, 12) || '未命名',
+        time: new Date().toLocaleString('zh-CN', { hour12: false }),
+        model,
+        durationMs: Date.now() - batchStartedAt,
+        successCount,
+        failCount,
+        imageCount: generationCount,
+        size: effectiveConfig.size,
+        quality: effectiveConfig.quality,
+        status: successCount > 0 ? '成功' : '失败',
+        thumbnails: successImages.map((img) => img.dataUrl),
+      }
+
+      const updatedLogs = [log, ...logs]
+      setLogs(updatedLogs)
+      await saveLogs(updatedLogs)
+
+      if (successCount > 0) {
+        Taro.showToast({ title: failCount ? `成功 ${successCount} 张，失败 ${failCount} 张` : '图片已生成', icon: 'success' })
+      } else {
+        const failed = settled.find((s) => s.status === 'rejected')
+        Taro.showToast({
+          title:
+            failed && failed.reason instanceof Error
+              ? failed.reason.message
+              : '生成失败',
+          icon: 'none',
+        })
+      }
+    } finally {
+      setRunning(false)
     }
-
-    const updatedLogs = [log, ...logs]
-    setLogs(updatedLogs)
-    await saveLogs(updatedLogs)
-
-    if (successCount > 0) {
-      Taro.showToast({ title: '图片已生成', icon: 'success' })
-    } else {
-      const failed = settled.find((s) => s.status === 'rejected')
-      Taro.showToast({
-        title:
-          failed && failed.reason instanceof Error
-            ? failed.reason.message
-            : '生成失败',
-        icon: 'none',
-      })
-    }
-
-    setRunning(false)
   }
 
   const saveResultToAssets = (image: GeneratedImage) => {
@@ -487,11 +560,15 @@ export default function ImagePage() {
         <View className="results-panel">
           <View className="results-header">
             <Text className="results-title">生成结果</Text>
-            {running && (
+            {running || retrying ? (
               <View className="results-timer">
-                <Text>等待 {formatDuration(elapsedMs)}</Text>
+                <Text>{running ? `等待 ${formatDuration(elapsedMs)}` : '重试中'}</Text>
               </View>
-            )}
+            ) : failedResultCount > 0 ? (
+              <View className="retry-all-btn" onClick={() => void retryFailedResults()}>
+                <Text>全部重试 {failedResultCount}</Text>
+              </View>
+            ) : null}
           </View>
 
           {results.length > 0 ? (
@@ -506,7 +583,11 @@ export default function ImagePage() {
                     onDownload={() => downloadImage(result.image!)}
                   />
                 ) : result.status === 'failed' ? (
-                  <FailedCard key={result.id} error={result.error || '生成失败'} />
+                  <FailedCard
+                    key={result.id}
+                    error={result.error || '生成失败'}
+                    onRetry={() => void retryResult(index)}
+                  />
                 ) : (
                   <PendingCard key={result.id} />
                 )
@@ -782,12 +863,17 @@ function ResultCard({
   )
 }
 
-function FailedCard({ error }: { error: string }) {
+function FailedCard({ error, onRetry }: { error: string; onRetry: () => void }) {
   return (
     <View className="result-card failed">
       <View className="failed-content">
         <Text className="failed-title">生成失败</Text>
         <Text className="failed-error">{error}</Text>
+      </View>
+      <View className="result-actions">
+        <View className="result-action retry" onClick={onRetry}>
+          <Text>重试</Text>
+        </View>
       </View>
     </View>
   )

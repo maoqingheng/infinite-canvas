@@ -64,7 +64,7 @@ export const defaultConfig: AiConfig = {
     audioModels: [],
     quality: "auto",
     size: "1:1",
-    count: "1",
+    count: "3",
     canvasImageCount: "3",
 };
 
